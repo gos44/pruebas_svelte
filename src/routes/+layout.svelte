@@ -1,7 +1,6 @@
 <script>
 	import { page } from '$app/stores';
 	
-	// Puedes agregar lógica aquí si necesitas
 	let currentYear = new Date().getFullYear();
 </script>
 
@@ -11,9 +10,17 @@
 		<a href="/" class="logo">Mi Sitio</a>
 		<ul class="nav-links">
 			<li><a href="/" class:active={$page.url.pathname === '/'}>Inicio</a></li>
-			<li><a href="/about" class:active={$page.url.pathname === '/about'}>Acerca</a></li>
-			<li><a href="/services" class:active={$page.url.pathname === '/services'}>Servicios</a></li>
-			<li><a href="/contact" class:active={$page.url.pathname === '/contact'}>Contacto</a></li>
+
+			<li><a href="/Binding" class:active={$page.url.pathname === '/Binding'}>Binding</a></li>
+
+			<li><a href="/Reactividad" class:active={$page.url.pathname === '/Reactividad'}>Reactividad</a></li>
+
+			<li><a href="/Slots" class:active={$page.url.pathname === '/Slots'}>Slots</a></li>
+
+			<li><a href="/Stores" class:active={$page.url.pathname === '/Stores'}>Stores</a></li>
+
+			<li><a href="/Props" class:active={$page.url.pathname === '/Props'}>Props</a></li>
+
 		</ul>
 	</div>
 </nav>
@@ -36,10 +43,11 @@
 				<h3>Enlaces Rápidos</h3>
 				<ul>
 					<li><a href="/">Inicio</a></li>
-					<li><a href="/about">Acerca</a></li>
-					<li><a href="/services">Servicios</a></li>
-					<li><a href="/contact">Contacto</a></li>
-                    
+					<li><a href="/Binding">Binding</a></li>
+					<li><a href="/Reactividad">Reactividad</a></li>
+					<li><a href="/Slots">Slots</a></li>
+                    <li><a href="/Props">Props</a></li>
+					<li><a href="/Stores">Stores</a></li>
 				</ul>
 			</div>
 			
