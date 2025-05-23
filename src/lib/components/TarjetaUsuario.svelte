@@ -3,7 +3,6 @@
 export let usuario:{ nombre:string;
 edad:number}
 
-
 </script>
 
 <p><strong>Nombre:</strong>{usuario.nombre}</p>

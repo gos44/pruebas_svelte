@@ -1,1 +1,11 @@
 @import 'tailwindcss';
+
+:root {
+    --color-primary-teal: #2E9C9D;
+    --color-primary-red: #D92127;
+    --color-complementary-white: #FFFFFF;
+    --color-complementary-light-blue: #CDEEEE;
+    --color-complementary-medium-teal: #66BBBA;
+    --color-complementary-light-red: #ED8380;
+    --color-error: var(--color-primary-red); /* Using the primary red for error messages and borders */
+}

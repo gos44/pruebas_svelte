@@ -30,6 +30,7 @@
 		"globals": "^16.0.0",
 		"jsdom": "^26.0.0",
 		"postcss": "^8.5.3",
+		"sass": "^1.89.0",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwindcss": "^4.1.7",
