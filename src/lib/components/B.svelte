@@ -1,5 +1,5 @@
 <script>
-import { contador } from '../../routes/Store/store.js';
+import { contador } from '$lib/types/store';
 </script>
 
 <p>Valor actual: {$contador}</p>
