@@ -1,11 +1,10 @@
 <script>
-import LayoutPersonalizado from './LayoutPersonalizado.svelte';
+import Slot from './Slot.svelte';
 </script>
 
 <h1>Slots</h1>
 
-<LayoutPersonalizado>
+<Slot>
 <p>Este contenido se inyecta dentro del slot del layout.</p>
 <button>Acción dentro del slot</button>
-<p>{Date()}</p>
-</LayoutPersonalizado>
+</Slot>

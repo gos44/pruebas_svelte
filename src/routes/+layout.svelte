@@ -17,10 +17,11 @@
 
 			<li><a href="/Slots" class:active={$page.url.pathname === '/Slots'}>Slots</a></li>
 
-			<li><a href="/Stores" class:active={$page.url.pathname === '/Stores'}>Stores</a></li>
+			<li><a href="/Store" class:active={$page.url.pathname === '/Store'}>Store</a></li>
 
 			<li><a href="/Props" class:active={$page.url.pathname === '/Props'}>Props</a></li>
-			
+
+			<li><a href="/Extra" class:active={$page.url.pathname === '/Extra'}>Extra</a></li>
 
 		</ul>
 	</div>

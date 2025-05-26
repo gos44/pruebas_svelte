@@ -3,6 +3,7 @@ import A from '$lib/components/A.svelte';
 import B from '$lib/components/B.svelte';
 
 let contador = $state(0)
+
 function incremento(){
     contador += 1
 }
