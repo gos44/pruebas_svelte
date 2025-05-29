@@ -1,6 +1,6 @@
 <script>
     let precio = 100
-    let cantidad =2
+    let cantidad = 2
     $: total = precio * cantidad
 </script>
 <h1>Welcome to SvelteKit</h1>
