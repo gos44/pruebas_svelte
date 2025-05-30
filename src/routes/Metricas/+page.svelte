@@ -16,9 +16,9 @@
     
     <div class="charts-grid">
         <!-- Gráfico de usuarios activos -->
-        <BarChart 
-            etiquetas={meses} 
-            datos={usuarios} 
+        <BarChart
+            etiquetas={meses}
+            datos={usuarios}
             titulo="Usuarios Activos por Mes"
             colorPrimario={colorAzul}
             colorSecundario="#1d4ed8"
@@ -27,9 +27,9 @@
         />
         
         <!-- Gráfico de ventas -->
-        <BarChart 
-            etiquetas={meses} 
-            datos={ventas} 
+        <BarChart
+            etiquetas={meses}
+            datos={ventas}
             titulo="Ventas Mensuales (USD)"
             colorPrimario={colorVerde}
             colorSecundario="#059669"

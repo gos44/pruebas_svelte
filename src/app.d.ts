@@ -1,5 +1,8 @@
 declare global {
 	declare namespace App {
+	interface Error {
+		code?: string;
+	}
 	interface Locals {
 		user?: {
 		id: string;
@@ -7,7 +10,10 @@ declare global {
 		email?: string;
 		} | null;
 	}
-}
+	}
+	
+
+
 }
 
 
