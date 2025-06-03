@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  
-  type Persona = { 
+
+type Persona = { 
     id: string;
     nombre: string; 
     edad: number;
     fechaCreacion: Date;
-  };
-  
+};
   let nombre = '';
   let edad: number | string = '';
   let personas: Persona[] = [];

@@ -1,6 +1,14 @@
 <script>
-	// Lógica de la página si la necesitas
+	import TarjetaUsuario from '$lib/components/TarjetaUsuario.svelte';
+
+	let currentYear = new Date().getFullYear();
+	const usuarios = [
+        { nombre: 'Ana', edad: 28 },
+        { nombre: 'Luis', edad: 35 },
+        { nombre: 'María', edad: 22 }
+    ];
 </script>
+
 
 <svelte:head>
 	<title>Inicio - Mi Sitio</title>
@@ -17,23 +25,12 @@
 </div>
 
 <section class="features">
-	<h2>Nuestras Características</h2>
-	<div class="features-grid">
-		<div class="feature-card">
-			<h3>Característica 1</h3>
-			<p>Descripción de la primera característica importante.</p>
-		</div>
-		
-		<div class="feature-card">
-			<h3>Característica 2</h3>
-			<p>Descripción de la segunda característica importante.</p>
-		</div>
-		
-		<div class="feature-card">
-			<h3>Característica 3</h3>
-			<p>Descripción de la tercera característica importante.</p>
-		</div>
-	</div>
+    <h2>Nuestros Usuarios</h2>
+    <div class="features-grid">
+        {#each usuarios as usuario}
+            <TarjetaUsuario {usuario} />
+        {/each}
+    </div>
 </section>
 
 <style>

@@ -10,7 +10,7 @@ const mainLinks: Link[] = [
     { href: '/formulario', label: 'Formulario' },
     { href: '/Metricas', label: 'Metricas' },
     { href: '/tareas', label: 'Tareas' },
-    { href: '/sobre-nosotros', label: 'Sobre Nosotros' }
+    { href: '/sobre-Componentes', label: 'Sobre Componentes' }
  ];
     
     const authLinks = [
