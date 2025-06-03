@@ -7,7 +7,7 @@
     let ventas = [45000, 52000, 48500, 61000, 58500, 67000];
     
     // Configuración de colores personalizados
-    let colorAzul = '#2F00FFFF';
+    let colorAzul = '#F39213FF';
     let colorVerde = '#10b981';
 </script>
 
@@ -35,6 +35,22 @@
             colorSecundario="#059669"
             mostrarValores={true}
             animacion={true}
+        />
+
+        <BarChart
+        etiquetas={['Q1', 'Q2', 'Q3', 'Q4']} 
+        datos={[100, 150, 120, 180]}
+        titulo="Ventas 2024"
+        colorPrimario="#FF0000FF"
+        mostrarValores={true}
+        />
+
+        <BarChart
+        etiquetas={['A1', 'A2', 'A3', 'A4']} 
+        datos={[1, 2, 3, 4]}
+        titulo="Ventas segundo trimestre"
+        colorPrimario="#00E71FFF"
+        mostrarValores={true}
         />
     </div>
 </div>

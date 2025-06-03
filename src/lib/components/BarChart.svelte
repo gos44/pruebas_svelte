@@ -3,16 +3,34 @@
     import Chart from 'chart.js/auto';
     import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-    export let etiquetas: string[] = ['Enero', 'Febrero', 'Marzo', 'Abril'];
-    export let datos: number[] = [10, 20, 15, 25];
-    export let titulo: string = 'Ventas del trimestre';
-    export let colorPrimario: string = '#6366f1';
-    export let colorSecundario: string = '#a855f7';
-    export let mostrarValores: boolean = true;
-    export let animacion: boolean = true;
+    interface Props {
+        etiquetas?: string[];
+        datos?: number[];
+        titulo?: string;
+        colorPrimario?: string;
+        colorSecundario?: string;
+        mostrarValores?: boolean;
+        animacion?: boolean;
+    }
+
+    let {
+        etiquetas = ['Enero', 'Febrero', 'Marzo', 'Abril'],
+        datos = [10, 20, 15, 25],
+        titulo = 'Ventas del trimestre',
+        colorPrimario = '#6366f1',
+        colorSecundario = '#a855f7',
+        mostrarValores = true,
+        animacion = true
+    }: Props = $props();
+
     Chart.register(ChartDataLabels);
-    let canvas: HTMLCanvasElement | null = null;
-    let grafico: Chart | null = null;
+    
+    let canvas = $state<HTMLCanvasElement | null>(null);
+    let grafico = $state<Chart | null>(null);
+
+    // Computed values usando $derived
+    const total = $derived(datos.reduce((a, b) => a + b, 0));
+    const promedio = $derived(Math.round(total / datos.length));
 
     // Generar gradiente de colores
     const generarColores = (cantidad: number) => {
@@ -28,123 +46,194 @@
         return { colores, colorFondo };
     };
 
-    onMount(() => {
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            const { colores, colorFondo } = generarColores(datos.length);
-            
-            // Crear gradiente para las barras
-            const gradiente = ctx?.createLinearGradient(0, 0, 0, 400);
-            gradiente?.addColorStop(0, colorPrimario);
-            gradiente?.addColorStop(1, colorSecundario);
+    const crearGrafico = () => {
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        const { colores, colorFondo } = generarColores(datos.length);
+        
+        // Crear gradiente para las barras
+        const gradiente = ctx.createLinearGradient(0, 0, 0, 400);
+        gradiente.addColorStop(0, colorPrimario);
+        gradiente.addColorStop(1, colorSecundario);
 
-            grafico = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: etiquetas,
-                    datasets: [{
-                        label: titulo,
-                        data: datos,
-                        backgroundColor: colores,
-                        borderColor: colores.map(color => color.replace('0.9', '1')),
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        hoverBackgroundColor: colores.map(color => color.replace('0.9', '1')),
-                        hoverBorderWidth: 3,
-                    }]
+        grafico = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    label: titulo,
+                    data: datos,
+                    backgroundColor: colores,
+                    borderColor: colores.map(color => color.replace('0.9', '1')),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    hoverBackgroundColor: colores.map(color => color.replace('0.9', '1')),
+                    hoverBorderWidth: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: animacion ? 1500 : 0,
+                    easing: 'easeInOutQuart'
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: animacion ? 1500 : 0,
-                        easing: 'easeInOutQuart'
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: false
                     },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: colorPrimario,
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return etiquetas[context[0].dataIndex];
+                            },
+                            label: function(context) {
+                                return `${titulo}: ${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
                     },
-                    plugins: {
-                        legend: {
+                    ...(mostrarValores && {
+                        datalabels: {
+                            display: true,
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#374151',
+                            font: {
+                                weight: 'bold',
+                                size: 11
+                            },
+                            formatter: (value: number) => value.toLocaleString()
+                        }
+                    })
+                },
+                scales: {
+                    x: {
+                        grid: {
                             display: false
                         },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: colorPrimario,
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            displayColors: false,
-                            callbacks: {
-                                title: function(context) {
-                                    return etiquetas[context[0].dataIndex];
-                                },
-                                label: function(context) {
-                                    return `${titulo}: ${context.parsed.y.toLocaleString()}`;
-                                }
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                size: 12,
+                                weight: 500
                             }
                         }
                     },
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#6b7280',
-                                font: {
-                                    size: 12,
-                                    weight: 500
-                                }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
                             color: 'rgba(107, 114, 128, 0.1)'
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                size: 11
                             },
-                            ticks: {
-                                color: '#6b7280',
-                                font: {
-                                    size: 11
-                                },
-                                callback: function(value) {
-                                    return value.toLocaleString();
-                                }
+                            callback: function(value) {
+                                return (value as number).toLocaleString();
                             }
                         }
-                    },
-                    onHover: (event, elements) =>{ if (canvas) {
-                    canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                    }
+                },
+                onHover: (event, elements) => {
+                    if (canvas) {
+                        canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                    }
                 }
-                }
-            }});
-
-            if (mostrarValores && grafico) {
-    // Asegura que plugins exista
-    if (!grafico.options.plugins) {
-        grafico.options.plugins = {};
-    }
-    grafico.options.plugins.datalabels = {
-        display: true,
-        anchor: 'end',
-        align: 'top',
-        color: '#374151',
-        font: {
-        weight: 'bold',
-        size: 11
-        },
-        formatter: (value) => value.toLocaleString()
-        };
-        }
             }
         });
+    };
 
-        onDestroy(() => {
-            grafico?.destroy();
-        });
+    const actualizarGrafico = () => {
+        if (!grafico) return;
+        
+        const { colores } = generarColores(datos.length);
+        
+        // Actualizar datos
+        grafico.data.labels = etiquetas;
+        grafico.data.datasets[0].data = datos;
+        grafico.data.datasets[0].backgroundColor = colores;
+        grafico.data.datasets[0].borderColor = colores.map(color => color.replace('0.9', '1'));
+        grafico.data.datasets[0].hoverBackgroundColor = colores.map(color => color.replace('0.9', '1'));
+        grafico.data.datasets[0].label = titulo;
+        
+        // Actualizar opciones de colores
+        if (grafico.options.plugins?.tooltip) {
+            grafico.options.plugins.tooltip.borderColor = colorPrimario;
+        }
+        
+        // Actualizar callbacks del tooltip
+        if (grafico.options.plugins?.tooltip?.callbacks) {
+            grafico.options.plugins.tooltip.callbacks.title = function(context) {
+                return etiquetas[context[0].dataIndex];
+            };
+            grafico.options.plugins.tooltip.callbacks.label = function(context) {
+                return `${titulo}: ${context.parsed.y.toLocaleString()}`;
+            };
+        }
+        
+        // Actualizar configuración de datalabels
+        if (grafico.options.plugins) {
+            if (mostrarValores) {
+                grafico.options.plugins.datalabels = {
+                    display: true,
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#374151',
+                    font: {
+                        weight: 'bold',
+                        size: 11
+                    },
+                    formatter: (value: number) => value.toLocaleString()
+                };
+            } else {
+                grafico.options.plugins.datalabels = {
+                    display: false
+                };
+            }
+        }
+        
+        grafico.update();
+    };
+
+    // Efecto para crear el gráfico cuando se monta el componente
+    onMount(() => {
+        crearGrafico();
+    });
+
+    // Efecto para actualizar el gráfico cuando cambian las props
+    $effect(() => {
+        // Este efecto se ejecuta cuando cambian las dependencias
+        if (grafico) {
+            actualizarGrafico();
+        }
+        // Dependencias: etiquetas, datos, titulo, colorPrimario, colorSecundario, mostrarValores
+        etiquetas;
+        datos;
+        titulo;
+        colorPrimario;
+        colorSecundario;
+        mostrarValores;
+    });
+
+    onDestroy(() => {
+        grafico?.destroy();
+    });
 </script>
 
 <div class="chart-container">
@@ -153,11 +242,11 @@
         <div class="chart-stats">
             <span class="stat-item">
                 <span class="stat-label">Total:</span>
-                <span class="stat-value">{datos.reduce((a, b) => a + b, 0).toLocaleString()}</span>
+                <span class="stat-value">{total.toLocaleString()}</span>
             </span>
             <span class="stat-item">
                 <span class="stat-label">Promedio:</span>
-                <span class="stat-value">{Math.round(datos.reduce((a, b) => a + b, 0) / datos.length).toLocaleString()}</span>
+                <span class="stat-value">{promedio.toLocaleString()}</span>
             </span>
         </div>
     </div>
