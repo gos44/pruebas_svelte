@@ -1,5 +1,5 @@
 <script>
-  let { title = '', padding = '1rem' } = $props();
+  let { title = '', padding = '3rem' } = $props();
 </script>
 
 <div class="card" style="padding: {padding}">

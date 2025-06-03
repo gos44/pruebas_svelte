@@ -57,13 +57,13 @@ import TodoList from "$lib/components/TodoList.svelte";
 </div>
 
 </div>
-
+<br>
 <div>
 <Button variant="primary">Guardar</Button>
 <br>
 <Button variant="danger" disabled>Eliminar</Button>
 </div>
-
+<br>
 
 <button onclick={() => showModal = true}>Abrir Modal</button>
 <Modal isOpen={showModal} title="Mi Modal">
@@ -122,16 +122,13 @@ import TodoList from "$lib/components/TodoList.svelte";
         }
     }
     button{
-        background-color: #4CAF50;
-        border: none;
-        color: white;
-        padding: 10px 20px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        margin: 4px 2px;
-        cursor: pointer;
+    background-color: #4CAF50;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    margin: auto;
+    display: flex;
     }
     .card {
         margin: 1rem;
