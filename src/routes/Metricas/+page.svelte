@@ -7,7 +7,7 @@
     let ventas = [45000, 52000, 48500, 61000, 58500, 67000];
     
     // Configuración de colores personalizados
-    let colorAzul = '#3b82f6';
+    let colorAzul = '#F63B3BFF';
     let colorVerde = '#10b981';
 </script>
 

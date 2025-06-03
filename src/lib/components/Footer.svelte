@@ -15,12 +15,10 @@
 				<h3>Enlaces Rápidos</h3>
 				<ul>
 					<li><a href="/">Inicio</a></li>
-					<li><a href="/Binding">Binding</a></li>
-					<li><a href="/Reactividad">Reactividad</a></li>
-					<li><a href="/Slots">Slots</a></li>
-					<li><a href="/Props">Props</a></li>
-					<li><a href="/Store">Store</a></li>
-					<li><a href="/Extra">Extra</a></li>
+					<li><a href="/formulario">Formulario</a></li>
+					<li><a href="/login">Login</a></li>
+					<li><a href="/metricas">Métricas</a></li>
+					<li><a href="/tareas">Tareas</a></li>
 				</ul>
 			</div>
 			
