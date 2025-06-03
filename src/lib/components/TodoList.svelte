@@ -1,4 +1,4 @@
-    <script lang="ts">
+<script lang="ts">
     import { onMount } from 'svelte';
     
     type Tarea = {
@@ -14,27 +14,27 @@
     type Filtro = 'todas' | 'pendientes' | 'completadas';
     type OrdenarPor = 'fecha' | 'prioridad' | 'alfabetico';
 
-    let nuevaTarea = '';
-    let nuevaPrioridad: 'baja' | 'media' | 'alta' = 'media';
-    let nuevaCategoria = '';
-    let nuevaFechaVencimiento = '';
-    let tareas: Tarea[] = [];
-    let filtroActual: Filtro = 'todas';
-    let ordenarPor: OrdenarPor = 'fecha';
-    let busqueda = '';
-    let modoOscuro = false;
-    let editandoId: string | null = null;
-    let textoEditando = '';
-    let mostrarFormulario = false;
-    let animandoEliminacion = '';
+    let nuevaTarea = $state('');
+    let nuevaPrioridad = $state<'baja' | 'media' | 'alta'>('media');
+    let nuevaCategoria = $state('');
+    let nuevaFechaVencimiento = $state('');
+    let tareas = $state<Tarea[]>([]);
+    let filtroActual = $state<Filtro>('todas');
+    let ordenarPor = $state<OrdenarPor>('fecha');
+    let busqueda = $state('');
+    let modoOscuro = $state(false);
+    let editandoId = $state<string | null>(null);
+    let textoEditando = $state('');
+    let mostrarFormulario = $state(false);
+    let animandoEliminacion = $state('');
 
     // Categorías predefinidas
     const categoriasPredefinidas = ['Personal', 'Trabajo', 'Estudios', 'Hogar', 'Salud', 'Compras'];
 
-    // Computed properties
-    $: tareasFiltradas = filtrarYOrdenarTareas(tareas, filtroActual, ordenarPor, busqueda);
-    $: estadisticas = calcularEstadisticas(tareas);
-    $: progreso = tareas.length > 0 ? (tareas.filter(t => t.completada).length / tareas.length) * 100 : 0;
+    // Computed properties usando $derived
+    const tareasFiltradas = $derived(filtrarYOrdenarTareas(tareas, filtroActual, ordenarPor, busqueda));
+    const estadisticas = $derived(calcularEstadisticas(tareas));
+    const progreso = $derived(tareas.length > 0 ? (tareas.filter(t => t.completada).length / tareas.length) * 100 : 0);
 
     function generarId(): string {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -45,35 +45,35 @@
 
         // Filtrar por búsqueda
         if (busqueda) {
-        resultado = resultado.filter(t => 
-            t.texto.toLowerCase().includes(busqueda.toLowerCase()) ||
-            t.categoria.toLowerCase().includes(busqueda.toLowerCase())
-        );
+            resultado = resultado.filter(t =>
+                t.texto.toLowerCase().includes(busqueda.toLowerCase()) ||
+                t.categoria.toLowerCase().includes(busqueda.toLowerCase())
+            );
         }
 
         // Filtrar por estado
         switch (filtro) {
-        case 'pendientes':
-            resultado = resultado.filter(t => !t.completada);
-            break;
-        case 'completadas':
-            resultado = resultado.filter(t => t.completada);
-            break;
+            case 'pendientes':
+                resultado = resultado.filter(t => !t.completada);
+                break;
+            case 'completadas':
+                resultado = resultado.filter(t => t.completada);
+                break;
         }
 
         // Ordenar
         switch (orden) {
-        case 'prioridad':
-            const prioridadPeso = { alta: 3, media: 2, baja: 1 };
-            resultado.sort((a, b) => prioridadPeso[b.prioridad] - prioridadPeso[a.prioridad]);
-            break;
-        case 'alfabetico':
-            resultado.sort((a, b) => a.texto.localeCompare(b.texto));
-            break;
-        case 'fecha':
-        default:
-            resultado.sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime());
-            break;
+            case 'prioridad':
+                const prioridadPeso = { alta: 3, media: 2, baja: 1 };
+                resultado.sort((a, b) => prioridadPeso[b.prioridad] - prioridadPeso[a.prioridad]);
+                break;
+            case 'alfabetico':
+                resultado.sort((a, b) => a.texto.localeCompare(b.texto));
+                break;
+            case 'fecha':
+            default:
+                resultado.sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime());
+                break;
         }
 
         return resultado;
@@ -81,19 +81,19 @@
 
     function calcularEstadisticas(tareas: Tarea[]) {
         return {
-        total: tareas.length,
-        completadas: tareas.filter(t => t.completada).length,
-        pendientes: tareas.filter(t => !t.completada).length,
-        vencidas: tareas.filter(t => 
-            t.fechaVencimiento && 
-            new Date(t.fechaVencimiento) < new Date() && 
-            !t.completada
-        ).length,
-        porPrioridad: {
-            alta: tareas.filter(t => t.prioridad === 'alta' && !t.completada).length,
-            media: tareas.filter(t => t.prioridad === 'media' && !t.completada).length,
-            baja: tareas.filter(t => t.prioridad === 'baja' && !t.completada).length,
-        }
+            total: tareas.length,
+            completadas: tareas.filter(t => t.completada).length,
+            pendientes: tareas.filter(t => !t.completada).length,
+            vencidas: tareas.filter(t => 
+                t.fechaVencimiento && 
+                new Date(t.fechaVencimiento) < new Date() && 
+                !t.completada
+            ).length,
+            porPrioridad: {
+                alta: tareas.filter(t => t.prioridad === 'alta' && !t.completada).length,
+                media: tareas.filter(t => t.prioridad === 'media' && !t.completada).length,
+                baja: tareas.filter(t => t.prioridad === 'baja' && !t.completada).length,
+            }
         };
     }
 
@@ -101,13 +101,13 @@
         if (nuevaTarea.trim() === '') return;
 
         const nuevaTareaObj: Tarea = {
-        id: generarId(),
-        texto: nuevaTarea.trim(),
-        completada: false,
-        prioridad: nuevaPrioridad,
-        categoria: nuevaCategoria || 'General',
-        fechaCreacion: new Date(),
-        fechaVencimiento: nuevaFechaVencimiento ? new Date(nuevaFechaVencimiento) : undefined
+            id: generarId(),
+            texto: nuevaTarea.trim(),
+            completada: false,
+            prioridad: nuevaPrioridad,
+            categoria: nuevaCategoria || 'General',
+            fechaCreacion: new Date(),
+            fechaVencimiento: nuevaFechaVencimiento ? new Date(nuevaFechaVencimiento) : undefined
         };
 
         tareas = [...tareas, nuevaTareaObj];
@@ -127,15 +127,15 @@
         animandoEliminacion = id;
         
         setTimeout(() => {
-        tareas = tareas.filter(t => t.id !== id);
-        animandoEliminacion = '';
-        guardarEnLocalStorage();
+            tareas = tareas.filter(t => t.id !== id);
+            animandoEliminacion = '';
+            guardarEnLocalStorage();
         }, 300);
     }
 
     function toggleCompletada(id: string) {
         tareas = tareas.map(t => 
-        t.id === id ? { ...t, completada: !t.completada } : t
+            t.id === id ? { ...t, completada: !t.completada } : t
         );
         guardarEnLocalStorage();
     }
@@ -149,7 +149,7 @@
         if (textoEditando.trim() === '') return;
         
         tareas = tareas.map(t => 
-        t.id === editandoId ? { ...t, texto: textoEditando.trim() } : t
+            t.id === editandoId ? { ...t, texto: textoEditando.trim() } : t
         );
         
         editandoId = null;
@@ -175,10 +175,10 @@
 
     function obtenerColorPrioridad(prioridad: string): string {
         switch (prioridad) {
-        case 'alta': return '#ef4444';
-        case 'media': return '#f59e0b';
-        case 'baja': return '#10b981';
-        default: return '#6b7280';
+            case 'alta': return '#ef4444';
+            case 'media': return '#f59e0b';
+            case 'baja': return '#10b981';
+            default: return '#6b7280';
         }
     }
 
@@ -190,39 +190,39 @@
 
     function formatearFecha(fecha: Date): string {
         return fecha.toLocaleDateString('es-ES', { 
-        day: 'numeric', 
-        month: 'short' 
+            day: 'numeric', 
+            month: 'short' 
         });
     }
 
     function guardarEnLocalStorage() {
         if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('tareas-todo', JSON.stringify(tareas));
-        localStorage.setItem('modo-oscuro', JSON.stringify(modoOscuro));
+            localStorage.setItem('tareas-todo', JSON.stringify(tareas));
+            localStorage.setItem('modo-oscuro', JSON.stringify(modoOscuro));
         }
     }
 
     function cargarDeLocalStorage() {
         if (typeof localStorage !== 'undefined') {
-        const tareasGuardadas = localStorage.getItem('tareas-todo');
-        const modoOscuroGuardado = localStorage.getItem('modo-oscuro');
-        
-        if (tareasGuardadas) {
-            try {
-            const tareasParseadas = JSON.parse(tareasGuardadas);
-            tareas = tareasParseadas.map((t: any) => ({
-                ...t,
-                fechaCreacion: new Date(t.fechaCreacion),
-                fechaVencimiento: t.fechaVencimiento ? new Date(t.fechaVencimiento) : undefined
-            }));
-            } catch (e) {
-            console.error('Error al cargar tareas:', e);
+            const tareasGuardadas = localStorage.getItem('tareas-todo');
+            const modoOscuroGuardado = localStorage.getItem('modo-oscuro');
+            
+            if (tareasGuardadas) {
+                try {
+                    const tareasParseadas = JSON.parse(tareasGuardadas);
+                    tareas = tareasParseadas.map((t: any) => ({
+                        ...t,
+                        fechaCreacion: new Date(t.fechaCreacion),
+                        fechaVencimiento: t.fechaVencimiento ? new Date(t.fechaVencimiento) : undefined
+                    }));
+                } catch (e) {
+                    console.error('Error al cargar tareas:', e);
+                }
             }
-        }
-        
-        if (modoOscuroGuardado) {
-            modoOscuro = JSON.parse(modoOscuroGuardado);
-        }
+            
+            if (modoOscuroGuardado) {
+                modoOscuro = JSON.parse(modoOscuroGuardado);
+            }
         }
     }
 
@@ -230,324 +230,325 @@
         cargarDeLocalStorage();
     });
 
-    $: if (typeof window !== 'undefined') {
-        document.body.classList.toggle('dark-mode', modoOscuro);
-    }
-    </script>
+    // Effect para el modo oscuro usando $effect
+    $effect(() => {
+        if (typeof window !== 'undefined') {
+            document.body.classList.toggle('dark-mode', modoOscuro);
+        }
+    });
+</script>
 
-    <div class="app" class:dark={modoOscuro}>
+<div class="app" class:dark={modoOscuro}>
     <div class="container">
         <!-- Header -->
         <header class="header">
-        <div class="header-content">
-            <div class="title-section">
-            <h1>✨ Mi Lista de Tareas</h1>
-            <p>Organiza tu día de manera inteligente</p>
+            <div class="header-content">
+                <div class="title-section">
+                    <h1>✨ Mi Lista de Tareas</h1>
+                    <p>Organiza tu día de manera inteligente</p>
+                </div>
+                <div class="header-controls">
+                    <button 
+                        class="mode-toggle"
+                        onclick={() => { modoOscuro = !modoOscuro; guardarEnLocalStorage(); }}
+                        title={modoOscuro ? 'Modo claro' : 'Modo oscuro'}
+                    >
+                        {modoOscuro ? '☀️' : '🌙'}
+                    </button>
+                </div>
             </div>
-            <div class="header-controls">
-            <button 
-                class="mode-toggle"
-                on:click={() => { modoOscuro = !modoOscuro; guardarEnLocalStorage(); }}
-                title={modoOscuro ? 'Modo claro' : 'Modo oscuro'}
-            >
-                {modoOscuro ? '☀️' : '🌙'}
-            </button>
-            </div>
-        </div>
 
-        <!-- Progress Bar -->
-        <div class="progress-container">
-            <div class="progress-bar">
-            <div 
-                class="progress-fill" 
-                style="width: {progreso}%"
-            ></div>
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div 
+                        class="progress-fill" 
+                        style="width: {progreso}%"
+                    ></div>
+                </div>
+                <span class="progress-text">
+                    {Math.round(progreso)}% completado ({estadisticas.completadas}/{estadisticas.total})
+                </span>
             </div>
-            <span class="progress-text">
-            {Math.round(progreso)}% completado ({estadisticas.completadas}/{estadisticas.total})
-            </span>
-        </div>
         </header>
 
         <!-- Stats -->
         <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">📋</div>
-            <div class="stat-content">
-            <div class="stat-number">{estadisticas.total}</div>
-            <div class="stat-label">Total</div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-content">
+                    <div class="stat-number">{estadisticas.total}</div>
+                    <div class="stat-label">Total</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">⏳</div>
-            <div class="stat-content">
-            <div class="stat-number">{estadisticas.pendientes}</div>
-            <div class="stat-label">Pendientes</div>
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-content">
+                    <div class="stat-number">{estadisticas.pendientes}</div>
+                    <div class="stat-label">Pendientes</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-content">
-            <div class="stat-number">{estadisticas.completadas}</div>
-            <div class="stat-label">Completadas</div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-number">{estadisticas.completadas}</div>
+                    <div class="stat-label">Completadas</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card priority-high">
-            <div class="stat-icon">🔥</div>
-            <div class="stat-content">
-            <div class="stat-number">{estadisticas.porPrioridad.alta}</div>
-            <div class="stat-label">Alta Prioridad</div>
+            <div class="stat-card priority-high">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <div class="stat-number">{estadisticas.porPrioridad.alta}</div>
+                    <div class="stat-label">Alta Prioridad</div>
+                </div>
             </div>
-        </div>
         </div>
 
         <!-- Add Task Form -->
         <div class="form-container">
-        <div class="form-header">
-            <button 
-            class="add-task-btn"
-            on:click={() => mostrarFormulario = !mostrarFormulario}
-            >
-            <span class="btn-icon">{mostrarFormulario ? '−' : '+'}</span>
-            {mostrarFormulario ? 'Ocultar formulario' : 'Agregar nueva tarea'}
-            </button>
-        </div>
-
-        {#if mostrarFormulario}
-            <form on:submit|preventDefault={agregarTarea} class="task-form">
-            <div class="form-row">
-                <div class="form-group flex-2">
-                <label for="nueva-tarea">Descripción de la tarea</label>
-                <input
-                    id="nueva-tarea"
-                    type="text"
-                    bind:value={nuevaTarea}
-                    placeholder="¿Qué necesitas hacer?"
-                    required
-                />
-                </div>
-                <div class="form-group">
-                <label for="prioridad">Prioridad</label>
-                <select id="prioridad" bind:value={nuevaPrioridad}>
-                    <option value="baja">🟢 Baja</option>
-                    <option value="media">🟡 Media</option>
-                    <option value="alta">🔴 Alta</option>
-                </select>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                <label for="categoria">Categoría</label>
-                <input
-                    id="categoria"
-                    type="text"
-                    bind:value={nuevaCategoria}
-                    placeholder="Ej: Trabajo, Personal..."
-                    list="categorias"
-                />
-                <datalist id="categorias">
-                    {#each categoriasPredefinidas as categoria}
-                    <option value={categoria}></option>
-                    {/each}
-                </datalist>
-                </div>
-                <div class="form-group">
-                <label for="fecha-vencimiento">Fecha límite (opcional)</label>
-                <input
-                    id="fecha-vencimiento"
-                    type="date"
-                    bind:value={nuevaFechaVencimiento}
-                    min={new Date().toISOString().split('T')[0]}
-                />
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                ➕ Agregar Tarea
-                </button>
-                <button type="button" class="btn btn-secondary" on:click={limpiarFormulario}>
-                🔄 Limpiar
+            <div class="form-header">
+                <button 
+                    class="add-task-btn"
+                    onclick={() => mostrarFormulario = !mostrarFormulario}
+                >
+                    <span class="btn-icon">{mostrarFormulario ? '−' : '+'}</span>
+                    {mostrarFormulario ? 'Ocultar formulario' : 'Agregar nueva tarea'}
                 </button>
             </div>
-            </form>
-        {/if}
+
+            {#if mostrarFormulario}
+                <form onsubmit={(e) => { e.preventDefault(); agregarTarea(); }} class="task-form">
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="nueva-tarea">Descripción de la tarea</label>
+                            <input
+                                id="nueva-tarea"
+                                type="text"
+                                bind:value={nuevaTarea}
+                                placeholder="¿Qué necesitas hacer?"
+                                required
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="prioridad">Prioridad</label>
+                            <select id="prioridad" bind:value={nuevaPrioridad}>
+                                <option value="baja">🟢 Baja</option>
+                                <option value="media">🟡 Media</option>
+                                <option value="alta">🔴 Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="categoria">Categoría</label>
+                            <input
+                                id="categoria"
+                                type="text"
+                                bind:value={nuevaCategoria}
+                                placeholder="Ej: Trabajo, Personal..."
+                                list="categorias"
+                            />
+                            <datalist id="categorias">
+                                {#each categoriasPredefinidas as categoria}
+                                    <option value={categoria}></option>
+                                {/each}
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha-vencimiento">Fecha límite (opcional)</label>
+                            <input
+                                id="fecha-vencimiento"
+                                type="date"
+                                bind:value={nuevaFechaVencimiento}
+                                min={new Date().toISOString().split('T')[0]}
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            ➕ Agregar Tarea
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick={limpiarFormulario}>
+                            🔄 Limpiar
+                        </button>
+                    </div>
+                </form>
+            {/if}
         </div>
 
         <!-- Controls -->
         <div class="controls">
-        <div class="search-container">
-            <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input
-                type="text"
-                bind:value={busqueda}
-                placeholder="Buscar tareas..."
-                class="search-input"
-            />
-            {#if busqueda}
-                <button class="clear-search" on:click={() => busqueda = ''}>✕</button>
-            {/if}
-            </div>
-        </div>
-
-        <div class="filters">
-            <div class="filter-group">
-            <label>Mostrar:</label>
-            <select bind:value={filtroActual}>
-                <option value="todas">📋 Todas</option>
-                <option value="pendientes">⏳ Pendientes</option>
-                <option value="completadas">✅ Completadas</option>
-            </select>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        bind:value={busqueda}
+                        placeholder="Buscar tareas..."
+                        class="search-input"
+                    />
+                    {#if busqueda}
+                        <button class="clear-search" onclick={() => busqueda = ''}>✕</button>
+                    {/if}
+                </div>
             </div>
 
-            <div class="filter-group">
-            <label>Ordenar por:</label>
-            <select bind:value={ordenarPor}>
-                <option value="fecha">📅 Fecha</option>
-                <option value="prioridad">🎯 Prioridad</option>
-                <option value="alfabetico">🔤 Alfabético</option>
-            </select>
-            </div>
-        </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Mostrar:</label>
+                    <select bind:value={filtroActual}>
+                        <option value="todas">📋 Todas</option>
+                        <option value="pendientes">⏳ Pendientes</option>
+                        <option value="completadas">✅ Completadas</option>
+                    </select>
+                </div>
 
-        <div class="bulk-actions">
-            {#if estadisticas.completadas > 0}
-            <button class="btn btn-outline" on:click={eliminarCompletadas}>
-                🗑️ Limpiar completadas
-            </button>
-            {/if}
-            {#if estadisticas.pendientes > 0}
-            <button class="btn btn-outline" on:click={marcarTodasCompletadas}>
-                ✅ Marcar todas
-            </button>
-            {/if}
-        </div>
+                <div class="filter-group">
+                    <label>Ordenar por:</label>
+                    <select bind:value={ordenarPor}>
+                        <option value="fecha">📅 Fecha</option>
+                        <option value="prioridad">🎯 Prioridad</option>
+                        <option value="alfabetico">🔤 Alfabético</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bulk-actions">
+                {#if estadisticas.completadas > 0}
+                    <button class="btn btn-outline" onclick={eliminarCompletadas}>
+                        🗑️ Limpiar completadas
+                    </button>
+                {/if}
+                {#if estadisticas.pendientes > 0}
+                    <button class="btn btn-outline" onclick={marcarTodasCompletadas}>
+                        ✅ Marcar todas
+                    </button>
+                {/if}
+            </div>
         </div>
 
         <!-- Tasks List -->
         <div class="tasks-container">
-        {#if tareasFiltradas.length === 0}
-            <div class="empty-state">
-            <div class="empty-icon">
-                {#if busqueda}
-                🔍
-                {:else if filtroActual === 'completadas'}
-                🎯
-                {:else if tareas.length === 0}
-                📝
-                {:else}
-                ✨
-                {/if}
-            </div>
-            <h3>
-                {#if busqueda}
-                No se encontraron tareas
-                {:else if filtroActual === 'completadas'}
-                No hay tareas completadas
-                {:else if tareas.length === 0}
-                ¡Comienza agregando tu primera tarea!
-                {:else}
-                No hay tareas pendientes
-                {/if}
-            </h3>
-            <p>
-                {#if busqueda}
-                Intenta con otro término de búsqueda
-                {:else if filtroActual === 'completadas'}
-                Las tareas completadas aparecerán aquí
-                {:else if tareas.length === 0}
-                Usa el botón de arriba para crear una nueva tarea
-                {:else}
-                ¡Felicidades! Has completado todas tus tareas
-                {/if}
-            </p>
-            </div>
-        {:else}
-            <div class="tasks-list">
-            {#each tareasFiltradas as tarea (tarea.id)}
-                <div 
-                class="task-item" 
-                class:completed={tarea.completada}
-                class:overdue={estaVencida(tarea)}
-                class:deleting={animandoEliminacion === tarea.id}
-                >
-                <div class="task-checkbox">
-                    <input
-                    type="checkbox"
-                    checked={tarea.completada}
-                    on:change={() => toggleCompletada(tarea.id)}
-                    id="task-{tarea.id}"
-                    />
-                    <label for="task-{tarea.id}" class="checkbox-custom"></label>
-                </div>
-
-                <div class="task-content">
-                    {#if editandoId === tarea.id}
-                    <div class="edit-form">
-                        <input
-                        type="text"
-                        bind:value={textoEditando}
-                        class="edit-input"
-                        on:keydown={(e) => {
-                            if (e.key === 'Enter') guardarEdicion();
-                            if (e.key === 'Escape') cancelarEdicion();
-                        }}
-                        autofocus
-                        />
-                        <div class="edit-actions">
-                        <button class="btn-small btn-success" on:click={guardarEdicion}>✓</button>
-                        <button class="btn-small btn-cancel" on:click={cancelarEdicion}>✕</button>
-                        </div>
-                    </div>
-                    {:else}
-                    <div class="task-main">
-                        <div class="task-text">{tarea.texto}</div>
-                        <div class="task-meta">
-                        <span 
-                            class="priority-badge"
-                            style="background-color: {obtenerColorPrioridad(tarea.prioridad)}20; color: {obtenerColorPrioridad(tarea.prioridad)}"
-                        >
-                            {tarea.prioridad}
-                        </span>
-                        <span class="category-badge">{tarea.categoria}</span>
-                        {#if tarea.fechaVencimiento}
-                            <span class="due-date" class:overdue={estaVencida(tarea)}>
-                            📅 {formatearFecha(tarea.fechaVencimiento)}
-                            </span>
+            {#if tareasFiltradas.length === 0}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        {#if busqueda}
+                            🔍
+                        {:else if filtroActual === 'completadas'}
+                            🎯
+                        {:else if tareas.length === 0}
+                            📝
+                        {:else}
+                            ✨
                         {/if}
-                        </div>
                     </div>
-                    {/if}
+                    <h3>
+                        {#if busqueda}
+                            No se encontraron tareas
+                        {:else if filtroActual === 'completadas'}
+                            No hay tareas completadas
+                        {:else if tareas.length === 0}
+                            ¡Comienza agregando tu primera tarea!
+                        {:else}
+                            No hay tareas pendientes
+                        {/if}
+                    </h3>
+                    <p>
+                        {#if busqueda}
+                            Intenta con otro término de búsqueda
+                        {:else if filtroActual === 'completadas'}
+                            Las tareas completadas aparecerán aquí
+                        {:else if tareas.length === 0}
+                            Usa el botón de arriba para crear una nueva tarea
+                        {:else}
+                            ¡Felicidades! Has completado todas tus tareas
+                        {/if}
+                    </p>
                 </div>
+            {:else}
+                <div class="tasks-list">
+                    {#each tareasFiltradas as tarea (tarea.id)}
+                        <div 
+                            class="task-item" 
+                            class:completed={tarea.completada}
+                            class:overdue={estaVencida(tarea)}
+                            class:deleting={animandoEliminacion === tarea.id}
+                        >
+                            <div class="task-checkbox">
+                                <input
+                                    type="checkbox"
+                                    checked={tarea.completada}
+                                    onchange={() => toggleCompletada(tarea.id)}
+                                    id="task-{tarea.id}"
+                                />
+                                <label for="task-{tarea.id}" class="checkbox-custom"></label>
+                            </div>
+                            <div class="task-content">
+                                {#if editandoId === tarea.id}
+                                    <div class="edit-form">
+                                        <input
+                                            type="text"
+                                            bind:value={textoEditando}
+                                            class="edit-input"
+                                            onkeydown={(e) => {
+                                                if (e.key === 'Enter') guardarEdicion();
+                                                if (e.key === 'Escape') cancelarEdicion();
+                                            }}
+                                            autofocus
+                                        />
+                                        <div class="edit-actions">
+                                            <button class="btn-small btn-success" onclick={guardarEdicion}>✓</button>
+                                            <button class="btn-small btn-cancel" onclick={cancelarEdicion}>✕</button>
+                                        </div>
+                                    </div>
+                                {:else}
+                                    <div class="task-main">
+                                        <div class="task-text">{tarea.texto}</div>
+                                        <div class="task-meta">
+                                            <span 
+                                                class="priority-badge"
+                                                style="background-color: {obtenerColorPrioridad(tarea.prioridad)}20; color: {obtenerColorPrioridad(tarea.prioridad)}"
+                                            >
+                                                {tarea.prioridad}
+                                            </span>
+                                            <span class="category-badge">{tarea.categoria}</span>
+                                            {#if tarea.fechaVencimiento}
+                                                <span class="due-date" class:overdue={estaVencida(tarea)}>
+                                                    📅 {formatearFecha(tarea.fechaVencimiento)}
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                {/if}
+                            </div>
 
-                <div class="task-actions">
-                    {#if editandoId !== tarea.id}
-                    <button
-                        class="btn-action btn-edit"
-                        on:click={() => iniciarEdicion(tarea)}
-                        title="Editar tarea"
-                    >
-                        ✏️
-                    </button>
-                    {/if}
-                    <button
-                    class="btn-action btn-delete"
-                    on:click={() => eliminarTarea(tarea.id)}
-                    title="Eliminar tarea"
-                    >
-                    🗑️
-                    </button>
+                            <div class="task-actions">
+                                {#if editandoId !== tarea.id}
+                                    <button
+                                        class="btn-action btn-edit"
+                                        onclick={() => iniciarEdicion(tarea)}
+                                        title="Editar tarea"
+                                    >
+                                        ✏️
+                                    </button>
+                                {/if}
+                                <button
+                                    class="btn-action btn-delete"
+                                    onclick={() => eliminarTarea(tarea.id)}
+                                    title="Eliminar tarea"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    {/each}
                 </div>
-                </div>
-            {/each}
-            </div>
-        {/if}
+            {/if}
         </div>
     </div>
-    </div>
-
+</div>
     <style>
     :global(body.dark-mode) {
         background: #0f172a;
