@@ -1,293 +1,296 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
 
-type Persona = { 
+type Persona = {
     id: string;
-    nombre: string; 
+    nombre: string;
     edad: number;
     fechaCreacion: Date;
 };
-  let nombre = '';
-  let edad: number | string = '';
-  let personas: Persona[] = [];
-  let editando = false;
-  let indiceEditando: string | null = null;
-  let busqueda = '';
-  let mostrarFormulario = true;
-  let animandoEliminacion = '';
 
-  // Validación
-  let errores = {
+let nombre = $state('');
+let edad = $state<number | string>('');
+let personas = $state<Persona[]>([]);
+let editando = $state(false);
+let indiceEditando = $state<string | null>(null);
+let busqueda = $state('');
+let mostrarFormulario = $state(true);
+let animandoEliminacion = $state('');
+
+// Validación
+let errores = $state({
     nombre: '',
     edad: ''
-  };
+});
 
-  // Filtrar personas por búsqueda
-  $: personasFiltradas = personas.filter(p => 
+// Filtrar personas por búsqueda
+let personasFiltradas = $derived(personas.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     p.edad.toString().includes(busqueda)
-  );
+));
 
-  function generarId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
+function generarId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
 
-  function validarFormulario(): boolean {
-    errores = { nombre: '', edad: '' };
+function validarFormulario(): boolean {
+    errores.nombre = ''; // Mutar directamente las propiedades del objeto $state
+    errores.edad = '';
     let valido = true;
 
     if (!nombre.trim()) {
-      errores.nombre = 'El nombre es requerido';
-      valido = false;
+        errores.nombre = 'El nombre es requerido';
+        valido = false;
     } else if (nombre.trim().length < 2) {
-      errores.nombre = 'El nombre debe tener al menos 2 caracteres';
-      valido = false;
+        errores.nombre = 'El nombre debe tener al menos 2 caracteres';
+        valido = false;
     }
 
-    if (!edad) {
-      errores.edad = 'La edad es requerida';
-      valido = false;
+    if (!edad) { // edad es $state, se accede a su valor directamente
+        errores.edad = 'La edad es requerida';
+        valido = false;
     } else if (Number(edad) < 0 || Number(edad) > 150) {
-      errores.edad = 'La edad debe estar entre 0 y 150 años';
-      valido = false;
+        errores.edad = 'La edad debe estar entre 0 y 150 años';
+        valido = false;
     }
-
     return valido;
-  }
+}
 
-  function agregarPersona(e: Event) {
+function agregarPersona(e: Event) {
     e.preventDefault();
-    
+
     if (!validarFormulario()) return;
 
     if (editando && indiceEditando !== null) {
-      const index = personas.findIndex(p => p.id === indiceEditando);
-      if (index !== -1) {
-        personas[index] = { 
-          ...personas[index],
-          nombre: nombre.trim(), 
-          edad: Number(edad)
-        };
-        personas = [...personas];
-      }
-      editando = false;
-      indiceEditando = null;
+        const index = personas.findIndex(p => p.id === indiceEditando);
+        if (index !== -1) {
+            // Svelte 5 $state arrays son reactivos a mutaciones.
+            // Reasignar el array para que Svelte lo detecte como un cambio.
+            const personasActualizadas = [...personas];
+            personasActualizadas[index] = {
+                ...personasActualizadas[index],
+                nombre: nombre.trim(),
+                edad: Number(edad)
+            };
+            personas = personasActualizadas; // Reasignar para actualizar el $state array
+        }
+        editando = false;
+        indiceEditando = null;
     } else {
-      const nuevaPersona: Persona = {
-        id: generarId(),
-        nombre: nombre.trim(),
-        edad: Number(edad),
-        fechaCreacion: new Date()
-      };
-      personas = [...personas, nuevaPersona];
+        const nuevaPersona: Persona = {
+            id: generarId(),
+            nombre: nombre.trim(),
+            edad: Number(edad),
+            fechaCreacion: new Date()
+        };
+        personas = [...personas, nuevaPersona]; // Reasignar para actualizar el $state array
     }
-    
-    limpiarFormulario();
-  }
 
-  function editarPersona(persona: Persona) {
+    limpiarFormulario();
+}
+
+function editarPersona(persona: Persona) {
     nombre = persona.nombre;
     edad = persona.edad;
     editando = true;
     indiceEditando = persona.id;
     mostrarFormulario = true;
-    errores = { nombre: '', edad: '' };
-    
+    errores.nombre = ''; // Resetear errores
+    errores.edad = '';
+
     // Scroll al formulario
-    document.querySelector('.form-container')?.scrollIntoView({ 
-      behavior: 'smooth' 
+    document.querySelector('.form-container')?.scrollIntoView({
+        behavior: 'smooth'
     });
-  }
+}
 
-  function eliminarPersona(persona: Persona) {
-    animandoEliminacion = persona.id;
-    
+function eliminarPersona(personaAEliminar: Persona) {
+    animandoEliminacion = personaAEliminar.id;
+
     setTimeout(() => {
-      personas = personas.filter(p => p.id !== persona.id);
-      animandoEliminacion = '';
+        personas = personas.filter(p => p.id !== personaAEliminar.id); // Reasignar para actualizar el $state array
+        animandoEliminacion = '';
     }, 300);
-  }
+}
 
-  function limpiarFormulario() {
+function limpiarFormulario() {
     nombre = '';
     edad = '';
-    errores = { nombre: '', edad: '' };
-  }
+    errores.nombre = '';
+    errores.edad = '';
+}
 
-  function cancelarEdicion() {
+function cancelarEdicion() {
     limpiarFormulario();
     editando = false;
     indiceEditando = null;
-  }
+}
 
-  function formatearFecha(fecha: Date): string {
-    return fecha.toLocaleDateString('es-ES', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+function formatearFecha(fecha: Date): string {
+    return fecha.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
-  }
+}
 </script>
 
 <div class="container">
-  <div class="header">
-    <h1>Gestión de Personas</h1>
-    <div class="stats">
-      <div class="stat-card">
-        <span class="stat-number">{personas.length}</span>
-        <span class="stat-label">Total</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-number">{personas.length > 0 ? Math.round(personas.reduce((sum, p) => sum + p.edad, 0) / personas.length) : 0}</span>
-        <span class="stat-label">Edad Promedio</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Formulario -->
-  <div class="form-container" class:hidden={!mostrarFormulario}>
-    <div class="form-header">
-      <h2>{editando ? '✏️ Editar Persona' : '➕ Agregar Nueva Persona'}</h2>
-      <button 
-        type="button" 
-        class="toggle-btn"
-        on:click={() => mostrarFormulario = !mostrarFormulario}
-      >
-        {mostrarFormulario ? '🔼' : '🔽'}
-      </button>
+    <div class="header">
+        <h1>Gestión de Personas</h1>
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-number">{personas.length}</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{personas.length > 0 ? Math.round(personas.reduce((sum, p) => sum + p.edad, 0) / personas.length) : 0}</span>
+                <span class="stat-label">Edad Promedio</span>
+            </div>
+        </div>
     </div>
 
-    <form on:submit={agregarPersona} class="form">
-      <div class="form-group">
-        <label for="nombre">Nombre completo</label>
-        <input
-          id="nombre"
-          type="text"
-          bind:value={nombre}
-          placeholder="Ingresa el nombre completo"
-          class:error={errores.nombre}
-        />
-        {#if errores.nombre}
-          <span class="error-message">{errores.nombre}</span>
-        {/if}
-      </div>
+    <div class="form-container" class:hidden={!mostrarFormulario}>
+        <div class="form-header">
+            <h2>{editando ? '✏️ Editar Persona' : '➕ Agregar Nueva Persona'}</h2>
+            <button
+                type="button"
+                class="toggle-btn"
+                onclick={() => mostrarFormulario = !mostrarFormulario}
+            >
+                {mostrarFormulario ? '🔼' : '🔽'}
+            </button>
+        </div>
 
-      <div class="form-group">
-        <label for="edad">Edad</label>
-        <input
-          id="edad"
-          type="number"
-          bind:value={edad}
-          placeholder="Ingresa la edad"
-          min="0"
-          max="150"
-          class:error={errores.edad}
-        />
-        {#if errores.edad}
-          <span class="error-message">{errores.edad}</span>
-        {/if}
-      </div>
+        <form onsubmit={agregarPersona} class="form">
+            <div class="form-group">
+                <label for="nombre">Nombre completo</label>
+                <input
+                    id="nombre"
+                    type="text"
+                    bind:value={nombre}
+                    placeholder="Ingresa el nombre completo"
+                    class:error={errores.nombre}
+                />
+                {#if errores.nombre}
+                    <span class="error-message">{errores.nombre}</span>
+                {/if}
+            </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          {editando ? '💾 Actualizar' : '➕ Agregar'}
-        </button>
-        {#if editando}
-          <button type="button" class="btn btn-secondary" on:click={cancelarEdicion}>
-            ❌ Cancelar
-          </button>
-        {/if}
-      </div>
-    </form>
-  </div>
+            <div class="form-group">
+                <label for="edad">Edad</label>
+                <input
+                    id="edad"
+                    type="number"
+                    bind:value={edad}
+                    placeholder="Ingresa la edad"
+                    min="0"
+                    max="150"
+                    class:error={errores.edad}
+                />
+                {#if errores.edad}
+                    <span class="error-message">{errores.edad}</span>
+                {/if}
+            </div>
 
-  <!-- Búsqueda y Lista -->
-  <div class="list-container">
-    <div class="search-container">
-      <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
-        <input
-          type="text"
-          bind:value={busqueda}
-          placeholder="Buscar por nombre o edad..."
-          class="search-input"
-        />
-        {#if busqueda}
-          <button class="clear-search" on:click={() => busqueda = ''}>✕</button>
-        {/if}
-      </div>
-      <button 
-        class="toggle-form-btn"
-        on:click={() => mostrarFormulario = !mostrarFormulario}
-      >
-        {mostrarFormulario ? 'Ocultar Formulario' : 'Mostrar Formulario'}
-      </button>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {editando ? '💾 Actualizar' : '➕ Agregar'}
+                </button>
+                {#if editando}
+                    <button type="button" class="btn btn-secondary" onclick={cancelarEdicion}>
+                        ❌ Cancelar
+                    </button>
+                {/if}
+            </div>
+        </form>
     </div>
 
-    {#if personasFiltradas.length === 0}
-      <div class="empty-state">
-        {#if personas.length === 0}
-          <div class="empty-icon">👥</div>
-          <h3>No hay personas registradas</h3>
-          <p>Agrega la primera persona usando el formulario de arriba</p>
+    <div class="list-container">
+        <div class="search-container">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input
+                    type="text"
+                    bind:value={busqueda}
+                    placeholder="Buscar por nombre o edad..."
+                    class="search-input"
+                />
+                {#if busqueda}
+                    <button class="clear-search" onclick={() => busqueda = ''}>✕</button>
+                {/if}
+            </div>
+            <button
+                class="toggle-form-btn"
+                onclick={() => mostrarFormulario = !mostrarFormulario}
+            >
+                {mostrarFormulario ? 'Ocultar Formulario' : 'Mostrar Formulario'}
+            </button>
+        </div>
+
+        {#if personasFiltradas.length === 0}
+            <div class="empty-state">
+                {#if personas.length === 0}
+                    <div class="empty-icon">👥</div>
+                    <h3>No hay personas registradas</h3>
+                    <p>Agrega la primera persona usando el formulario de arriba</p>
+                {:else}
+                    <div class="empty-icon">🔍</div>
+                    <h3>No se encontraron resultados</h3>
+                    <p>Intenta con otro término de búsqueda</p>
+                {/if}
+            </div>
         {:else}
-          <div class="empty-icon">🔍</div>
-          <h3>No se encontraron resultados</h3>
-          <p>Intenta con otro término de búsqueda</p>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Edad</th>
+                            <th>Fecha de Registro</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each personasFiltradas as persona (persona.id)}
+                            <tr
+                                class="table-row"
+                                class:deleting={animandoEliminacion === persona.id}
+                            >
+                                <td class="name-cell">
+                                    <div class="avatar">{persona.nombre.charAt(0).toUpperCase()}</div>
+                                    <span>{persona.nombre}</span>
+                                </td>
+                                <td>
+                                    <span class="age-badge">{persona.edad} años</span>
+                                </td>
+                                <td class="date-cell">
+                                    {formatearFecha(persona.fechaCreacion)}
+                                </td>
+                                <td class="actions-cell">
+                                    <button
+                                        class="btn btn-edit"
+                                        onclick={() => editarPersona(persona)}
+                                        title="Editar persona"
+                                    >
+                                        ✏️
+                                    </button>
+                                    <button
+                                        class="btn btn-delete"
+                                        onclick={() => eliminarPersona(persona)}
+                                        title="Eliminar persona"
+                                    >
+                                        🗑️
+                                    </button>
+                                </td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
         {/if}
-      </div>
-    {:else}
-      <div class="table-wrapper">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Edad</th>
-              <th>Fecha de Registro</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each personasFiltradas as persona (persona.id)}
-              <tr 
-                class="table-row"
-                class:deleting={animandoEliminacion === persona.id}
-              >
-                <td class="name-cell">
-                  <div class="avatar">{persona.nombre.charAt(0).toUpperCase()}</div>
-                  <span>{persona.nombre}</span>
-                </td>
-                <td>
-                  <span class="age-badge">{persona.edad} años</span>
-                </td>
-                <td class="date-cell">
-                  {formatearFecha(persona.fechaCreacion)}
-                </td>
-                <td class="actions-cell">
-                  <button
-                    class="btn btn-edit"
-                    on:click={() => editarPersona(persona)}
-                    title="Editar persona"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    class="btn btn-delete"
-                    on:click={() => eliminarPersona(persona)}
-                    title="Eliminar persona"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    {/if}
-  </div>
+    </div>
 </div>
 
 <style>
@@ -351,7 +354,7 @@ type Persona = {
   }
 
   .form-container.hidden {
-    max-height: 60px;
+    max-height: 60px; /* Ajusta esto según el alto del encabezado del formulario */
     overflow: hidden;
     padding: 1rem 2rem;
   }
@@ -419,7 +422,7 @@ type Persona = {
   }
 
   .form-group input.error {
-    border-color: #ef4444;
+    border-color: #ef4444; /* Rojo para error */
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
   }
 
@@ -474,7 +477,7 @@ type Persona = {
   .list-container {
     background: white;
     border-radius: 16px;
-    overflow: hidden;
+    overflow: hidden; /* Para que la tabla no rompa el border-radius */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
@@ -505,7 +508,7 @@ type Persona = {
 
   .search-input {
     width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    padding: 0.75rem 1rem 0.75rem 2.5rem; /* Espacio para el ícono */
     border: 2px solid #e5e7eb;
     border-radius: 8px;
     font-size: 1rem;
@@ -518,7 +521,7 @@ type Persona = {
     border-color: #6366f1;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
-
+  
   .clear-search {
     position: absolute;
     right: 0.75rem;
@@ -538,6 +541,7 @@ type Persona = {
     color: #374151;
   }
 
+
   .toggle-form-btn {
     background: #6366f1;
     color: white;
@@ -550,7 +554,7 @@ type Persona = {
   }
 
   .toggle-form-btn:hover {
-    background: #5856eb;
+    background: #5856eb; /* Un poco más oscuro al hacer hover */
     transform: translateY(-1px);
   }
 
@@ -572,7 +576,7 @@ type Persona = {
   }
 
   .table-wrapper {
-    overflow-x: auto;
+    overflow-x: auto; /* Permite scroll horizontal en tablas grandes */
   }
 
   .table {
@@ -581,7 +585,7 @@ type Persona = {
   }
 
   .table th {
-    background: #f8fafc;
+    background: #f8fafc; /* Fondo leggermente grigio para encabezados */
     padding: 1rem;
     text-align: left;
     font-weight: 600;
@@ -594,14 +598,14 @@ type Persona = {
 
   .table-row {
     transition: all 0.3s ease;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9; /* Línea sutil entre filas */
   }
 
   .table-row:hover {
-    background: #f8fafc;
-    transform: scale(1.01);
+    background: #f8fafc; /* Resaltado al pasar el mouse */
+    transform: scale(1.01); /* Efecto sutil de zoom */
   }
-
+  
   .table-row.deleting {
     opacity: 0;
     transform: translateX(-100%);
@@ -609,7 +613,7 @@ type Persona = {
 
   .table td {
     padding: 1rem;
-    vertical-align: middle;
+    vertical-align: middle; /* Alinea contenido verticalmente */
   }
 
   .name-cell {
@@ -633,14 +637,14 @@ type Persona = {
   }
 
   .age-badge {
-    background: #dbeafe;
-    color: #1e40af;
+    background: #dbeafe; /* Azul claro */
+    color: #1e40af; /* Azul oscuro */
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.875rem;
     font-weight: 500;
   }
-
+  
   .date-cell {
     color: #6b7280;
     font-size: 0.875rem;
@@ -652,78 +656,68 @@ type Persona = {
   }
 
   .btn-edit {
-    background: #fef3c7;
-    color: #d97706;
+    background: #fef3c7; /* Amarillo claro */
+    color: #d97706; /* Amarillo oscuro */
     border: 1px solid #fcd34d;
     padding: 0.5rem;
     border-radius: 6px;
     font-size: 0.875rem;
   }
-
   .btn-edit:hover {
     background: #fde68a;
     transform: scale(1.1);
   }
 
   .btn-delete {
-    background: #fecaca;
-    color: #dc2626;
+    background: #fecaca; /* Rojo claro */
+    color: #dc2626; /* Rojo oscuro */
     border: 1px solid #f87171;
     padding: 0.5rem;
     border-radius: 6px;
     font-size: 0.875rem;
   }
-
   .btn-delete:hover {
     background: #fca5a5;
     transform: scale(1.1);
   }
 
+  /* Media Queries para Responsividad */
   @media (max-width: 768px) {
     .container {
-      padding: 1rem;
+        padding: 1rem;
     }
-
     .form {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* Una columna en móviles */
     }
-
     .search-container {
-      flex-direction: column;
-      align-items: stretch;
+        flex-direction: column;
+        align-items: stretch;
     }
-
     .search-wrapper {
-      max-width: none;
+        max-width: none;
     }
-
     .stats {
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
     }
-
     .stat-card {
-      width: 100%;
-      max-width: 200px;
+        width: 100%;
+        max-width: 200px; /* O el ancho que prefieras */
     }
-
     .header h1 {
-      font-size: 2rem;
+        font-size: 2rem;
     }
-
     .table {
-      font-size: 0.875rem;
+        font-size: 0.875rem; /* Texto más pequeño en tablas móviles */
     }
-
-    .name-cell {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
+    .name-cell { /* Ajustar avatar y nombre en móviles */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
-
-    .actions-cell {
-      flex-direction: column;
+    .actions-cell { /* Botones de acción en columna */
+        flex-direction: column;
     }
   }
 </style>
