@@ -1,24 +1,21 @@
-	<script>
+	<script lang="ts">
 	import { goto } from '$app/navigation';
 	import { register } from '$lib/types/auth';
 
-	let email = '';
-	let password = '';
-	let confirmPassword = '';
-	let error = '';
-	let success = '';
-	let isLoading = false;
-	let showPassword = false;
-	let showConfirmPassword = false;
-
+	let email = $state('');
+	let password = $state('');
+	let confirmPassword = $state('');
+	let error = $state('');
+	let success = $state('');
+	let isLoading = $state(false);
+	let showPassword = $state(false);
+	let showConfirmPassword = $state(false);
 	// Validaciones en tiempo real
-	let emailValid = false;
-	let passwordValid = false;
-	let passwordsMatch = false;
 
-	$: emailValid = email.includes('@') && email.includes('.');
-	$: passwordValid = password.length >= 8;
-	$: passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+
+	const emailValid = $derived (email.includes('@') && email.includes('.'));
+	const passwordValid = $derived (password.length >= 8);
+	const passwordsMatch =$derived  (password === confirmPassword && confirmPassword.length > 0);
 
 	async function handleRegister() {
 		// Validaciones previas
