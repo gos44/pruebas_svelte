@@ -1,6 +1,6 @@
-type Persona = { 
+type Persona = {
     id: string;
-    nombre: string; 
+    nombre: string;
     edad: number;
     fechaCreacion: Date;
 };

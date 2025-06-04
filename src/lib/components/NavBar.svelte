@@ -14,8 +14,8 @@ const mainLinks: Link[] = [
  ];
     
     const authLinks = [
-    { href: 'api/login', label: 'Iniciar sesión', className: 'login-btn' },
-    { href: 'api/signup', label: 'Registrarse', className: 'register-btn' }
+    { href: '/login', label: 'Iniciar sesión', className: 'login-btn' },
+    { href: '/signup', label: 'Registrarse', className: 'register-btn' }
 ];
     
     const toggleMenu = () => {

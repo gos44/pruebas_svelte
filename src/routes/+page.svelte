@@ -1,22 +1,16 @@
 <script>
-
   // Contador interactivo
   let count = $state(0);
-
   function increment() {
     count += 1;
   }
-
   function decrement() {
     count -= 1;
   }
-
   // Entrada de texto reactiva
   let text = $state("¡Escribe algo!");
-
   // Elemento con visibilidad alternable
   let visible = $state(true);
-
   function toggleVisibility() {
     visible = !visible;
   }
