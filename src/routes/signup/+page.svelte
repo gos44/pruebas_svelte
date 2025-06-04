@@ -1,7 +1,8 @@
-	<script lang="ts">
+<script lang="ts">
 	import { goto } from '$app/navigation';
 	import { register } from '$lib/types/auth';
 
+	// Estados reactivos con runas
 	let email = $state('');
 	let password = $state('');
 	let confirmPassword = $state('');
@@ -10,33 +11,57 @@
 	let isLoading = $state(false);
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
-	// Validaciones en tiempo real
 
+	// Validaciones derivadas - se recalculan automáticamente cuando cambian las dependencias
+	const emailValid = $derived(email.includes('@') && email.includes('.') && email.length > 0);
+	const passwordValid = $derived(password.length >= 8);
+	const passwordsMatch = $derived(password === confirmPassword && confirmPassword.length > 0);
+	const formValid = $derived(emailValid && passwordValid && passwordsMatch);
 
-	const emailValid = $derived (email.includes('@') && email.includes('.'));
-	const passwordValid = $derived (password.length >= 8);
-	const passwordsMatch =$derived  (password === confirmPassword && confirmPassword.length > 0);
+	// Objeto de estado del formulario - útil para debugging o estado global
+	const formState = $derived({
+		email: email.trim(),
+		password,
+		confirmPassword,
+		isValid: formValid,
+		hasErrors: error.length > 0,
+		isSubmitting: isLoading
+	});
+
+	// Requisitos de contraseña como estado derivado
+	const passwordRequirements = $derived([
+		{ text: 'Mínimo 8 caracteres', met: password.length >= 8 },
+		{ text: 'Contiene letra mayúscula', met: /[A-Z]/.test(password) },
+		{ text: 'Contiene letra minúscula', met: /[a-z]/.test(password) },
+		{ text: 'Contiene número', met: /\d/.test(password) }
+	]);
+
+	// Efectos secundarios con $effect
+	$effect(() => {
+		// Limpiar mensajes cuando el usuario empiece a escribir
+		if (email || password || confirmPassword) {
+		if (error || success) {
+			error = '';
+			success = '';
+		}
+		}
+	});
 
 	async function handleRegister() {
-		// Validaciones previas
-		if (!email || !password || !confirmPassword) {
-		error = 'Por favor completa todos los campos';
-		return;
-		}
-
+		// Validaciones previas usando el estado derivado
+		if (!formValid) {
 		if (!emailValid) {
-		error = 'Por favor ingresa un email válido';
-		return;
+			error = 'Por favor ingresa un email válido';
+			return;
 		}
-
 		if (!passwordValid) {
-		error = 'La contraseña debe tener al menos 8 caracteres';
-		return;
+			error = 'La contraseña debe cumplir todos los requisitos';
+			return;
 		}
-
-		if (password !== confirmPassword) {
-		error = 'Las contraseñas no coinciden';
-		return;
+		if (!passwordsMatch) {
+			error = 'Las contraseñas no coinciden';
+			return;
+		}
 		}
 
 		isLoading = true;
@@ -44,16 +69,16 @@
 		success = '';
 
 		try {
-		const result = await register(email, password);
+		const result = await register(formState.email, password);
 		if (result.success) {
 			success = 'Registro exitoso. Redirigiendo al login...';
-			error = '';
+			
+			// Usar $effect.root para manejar el timeout de manera más limpia
 			setTimeout(() => {
 			goto('/login');
 			}, 2000);
 		} else {
 			error = result.message ?? 'Ocurrió un error desconocido.';
-			success = '';
 		}
 		} catch (err) {
 		error = 'Error de conexión. Intenta de nuevo.';
@@ -63,25 +88,43 @@
 		}
 	}
 
-	function clearMessages() {
+	// Funciones de utilidad que pueden usar el estado reactivo
+	const togglePasswordVisibility = () => {
+		showPassword = !showPassword;
+	};
+
+	const toggleConfirmPasswordVisibility = () => {
+		showConfirmPassword = !showConfirmPassword;
+	};
+
+	const clearForm = () => {
+		email = '';
+		password = '';
+		confirmPassword = '';
 		error = '';
 		success = '';
-	}
+	};
 
-	function togglePasswordVisibility() {
-		showPassword = !showPassword;
-	}
+	// Derivado para el texto del botón basado en el estado
+	const submitButtonText = $derived(
+	isLoading ? 'Registrando...' :
+	!formValid ? 'Completa el formulario' :
+	'Crear Cuenta'
+	);
 
-	function toggleConfirmPasswordVisibility() {
-		showConfirmPassword = !showConfirmPassword;
-	}
+	// Log del estado para debugging (solo en desarrollo)
+	$effect(() => {
+		if (import.meta.env.DEV) {
+		console.log('Form State:', formState);
+		}
+	});
 	</script>
 
 	<div class="register-container">
 	<div class="wrapper">
 		<h1>Crear Cuenta</h1>
 		
-		<form on:submit|preventDefault={handleRegister}>
+		<form onsubmit={handleRegister}>
 		<div class="input-box">
 			<input 
 			type="email" 
@@ -89,8 +132,7 @@
 			placeholder="Correo electrónico" 
 			required 
 			disabled={isLoading}
-			on:input={clearMessages}
-			class:valid={emailValid && email.length > 0}
+			class:valid={emailValid}
 			class:invalid={!emailValid && email.length > 0}
 			/>
 			<i class="email-icon">✉</i>
@@ -105,20 +147,19 @@
 			<input 
 			type={showPassword ? 'text' : 'password'}
 			bind:value={password} 
-			placeholder="Contraseña (mín. 8 caracteres)" 
+			placeholder="Contraseña" 
 			required 
 			disabled={isLoading}
-			on:input={clearMessages}
-			class:valid={passwordValid && password.length > 0}
+			class:valid={passwordValid}
 			class:invalid={!passwordValid && password.length > 0}
 			/>
 			<button 
 			type="button" 
 			class="toggle-password"
-			on:click={togglePasswordVisibility}
+			onclick={togglePasswordVisibility}
 			disabled={isLoading}
 			>
-			{showPassword ? '✗' : '👁'}
+			{showPassword ? '🙈' : '👁'}
 			</button>
 			{#if password.length > 0}
 			<span class="validation-icon">
@@ -127,30 +168,34 @@
 			{/if}
 		</div>
 
-		<div class="password-requirements">
-			<div class="requirement" class:met={password.length >= 8}>
-		{password.length >= 8 ? '✓' : '•'}  Mínimo 8 caracteres
+		<!-- Requisitos de contraseña usando estado derivado -->
+		{#if password.length > 0}
+			<div class="password-requirements">
+			{#each passwordRequirements as requirement}
+				<div class="requirement" class:met={requirement.met}>
+				{requirement.met ? '✓' : '•'} {requirement.text}
+				</div>
+			{/each}
 			</div>
-		</div>
+		{/if}
 		
 		<div class="input-box">
-			<input
+			<input 
 			type={showConfirmPassword ? 'text' : 'password'}
-			bind:value={confirmPassword}
-			placeholder="Confirmar contraseña"
-			required
+			bind:value={confirmPassword} 
+			placeholder="Confirmar contraseña" 
+			required 
 			disabled={isLoading}
-			on:input={clearMessages}
 			class:valid={passwordsMatch}
 			class:invalid={!passwordsMatch && confirmPassword.length > 0}
 			/>
 			<button 
 			type="button" 
 			class="toggle-password"
-			on:click={toggleConfirmPasswordVisibility}
+			onclick={toggleConfirmPasswordVisibility}
 			disabled={isLoading}
 			>
-			{showConfirmPassword ? '✗' : '👁'}
+			{showConfirmPassword ? '🙈' : '👁'}
 			</button>
 			{#if confirmPassword.length > 0}
 			<span class="validation-icon">
@@ -173,26 +218,31 @@
 			</div>
 		{/if}
 
-		<button 
-			type="submit" 
-			class="btn" 
-			disabled={isLoading || !emailValid || !passwordValid || !passwordsMatch}
+		<button
+			type="submit"
+			class="btn"
+			disabled={isLoading || !formValid}
 		>
-			{#if isLoading}
+		{#if isLoading}
 			<span class="loading-spinner"></span>
-			Registrando...
-			{:else}
-			Crear Cuenta
 			{/if}
+			{submitButtonText}
 		</button>
 		</form>
 
 		<div class="login-link">
 		<p>¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a></p>
 		</div>
-	</div>
-	</div>
 
+		<!-- Debug info (solo en desarrollo) -->
+		{#if import.meta.env.DEV}
+		<details style="margin-top: 20px; color: rgba(255,255,255,0.7); font-size: 12px;">
+			<summary>Debug Info</summary>
+			<pre>{JSON.stringify(formState, null, 2)}</pre>
+		</details>
+		{/if}
+	</div>
+</div>
 	<style>
 	.register-container {
 		font-family: "Montserrat", sans-serif;
@@ -285,7 +335,7 @@
 
 	.input-box .email-icon {
 		position: absolute;
-		right: 22px;
+		right: 35px;
 		top: 50%;
 		transform: translateY(-50%);
 		font-size: 18px;
@@ -294,7 +344,7 @@
 
 	.toggle-password {
 		position: absolute;
-		right: 15px;
+		right: 30px;
 		top: 50%;
 		transform: translateY(-50%);
 		background: none;
