@@ -1,27 +1,106 @@
-<script>
+<!-- Login.svelte - Componente de login mejorado -->
+<script lang="ts">
   import { goto } from '$app/navigation';
   import { login } from '$lib/types/auth';
+  import { browser } from '$app/environment';
 
-  let email = '';
-  let password = '';
-  let error = '';
-  let isLoading = false;
+  // Estados reactivos con runas
+  let email = $state('');
+  let password = $state('');
+  let error = $state('');
+  let isLoading = $state(false);
+  let rememberMe = $state(false);
+  let showPassword = $state(false);
 
-  async function handleLogin() {
-    if (!email || !password) {
-      error = 'Por favor completa todos los campos';
-      return;
+  // Validaciones derivadas
+  const emailValid = $derived(() => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return email.length > 0 && emailRegex.test(email);
+  });
+  
+  const passwordValid = $derived(() => password.length > 0);
+  const formValid = $derived(() => emailValid() && passwordValid());
+
+  // Estado consolidado del formulario
+  const formState = $derived({
+    email: email.trim(),
+    password,
+    rememberMe,
+    isValid: formValid,
+    hasError: error.length > 0,
+    isSubmitting: isLoading,
+    canSubmit: formValid() && !isLoading
+  });
+
+  // Texto dinámico del botón
+  const submitButtonText = $derived(
+    isLoading ? 'Iniciando sesión...' :
+    !formValid ? 'Completa los campos' :
+    'Iniciar Sesión'
+  );
+
+  // Efectos secundarios
+  $effect(() => {
+    // Limpiar error cuando el usuario escriba
+    if (email || password) {
+      if (error) {
+        error = '';
+      }
+    }
+  });
+
+  // Efecto para localStorage (solo en el browser)
+  $effect(() => {
+    if (browser) {
+      if (rememberMe && email && emailValid()) {
+        localStorage.setItem('rememberedEmail', email);
+      } else if (!rememberMe) {
+        localStorage.removeItem('rememberedEmail');
+      }
+    }
+  });
+
+  // Cargar email recordado al montar (solo en el browser)
+  $effect(() => {
+    if (browser) {
+      const rememberedEmail = localStorage.getItem('rememberedEmail');
+      if (rememberedEmail && !email) {
+        email = rememberedEmail;
+        rememberMe = true;
+      }
+    }
+  });
+
+  async function handleLogin(event: Event) {
+    event.preventDefault();
+    
+    if (!formState.canSubmit) {
+      if (!emailValid) {
+        error = 'Por favor ingresa un email válido';
+        return;
+      }
+      if (!passwordValid) {
+        error = 'Por favor ingresa tu contraseña';
+        return;
+      }
     }
 
     isLoading = true;
     error = '';
     
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(formState.email, password);
+      
+      if (result.success) {
+        // Si el login es exitoso y "recordarme" está marcado
+        if (browser && rememberMe) {
+          localStorage.setItem('rememberedEmail', formState.email);
+        }
+        
+        // Redirigir al usuario
         goto('/');
       } else {
-        error = 'Credenciales inválidas';
+        error = result.message || 'Error desconocido';
       }
     } catch (err) {
       error = 'Error de conexión. Intenta de nuevo.';
@@ -31,42 +110,79 @@
     }
   }
 
-  function clearError() {
+  // Funciones auxiliares
+  const togglePasswordVisibility = () => {
+    showPassword = !showPassword;
+  };
+
+  const clearForm = () => {
+    email = '';
+    password = '';
     error = '';
-  }
+    rememberMe = false;
+  };
+
+  // Log del estado para debugging (solo en desarrollo)
+  $effect(() => {
+    if (import.meta.env.DEV) {
+      console.log('Login Form State:', formState);
+    }
+  });
 </script>
 
 <div class="login-container">
   <div class="wrapper">
     <h1>Iniciar Sesión</h1>
     
-    <form on:submit|preventDefault={handleLogin}>
+    <form onsubmit={handleLogin}>
       <div class="input-box">
         <input 
           type="email" 
-          bind:value={email} 
+          bind:value={email}
           placeholder="Correo electrónico" 
           required 
           disabled={isLoading}
-          on:input={clearError}
+          class:valid={emailValid}
+          class:invalid={!emailValid && email.length > 0}
+          autocomplete="email"
         />
         <i class="email-icon">✉</i>
+        {#if email.length > 0}
+          <span class="validation-icon">
+            {emailValid() ? '✓' : '✗'}
+          </span>
+        {/if}
       </div>
       
       <div class="input-box">
         <input 
-          type="password" 
-          bind:value={password} 
+          type={showPassword ? 'text' : 'password'}
+          bind:value={password}
           placeholder="Contraseña" 
           required 
           disabled={isLoading}
-          on:input={clearError}
+          class:valid={passwordValid}
+          class:invalid={!passwordValid && password.length > 0}
+          autocomplete="current-password"
         />
-        <i class="lock-icon">🔒</i>
+        <button 
+          type="button" 
+          class="toggle-password"
+          onclick={togglePasswordVisibility}
+          disabled={isLoading}
+          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        >
+          {showPassword ? '✗' : '👁'}
+        </button>
+        {#if password.length > 0}
+          <span class="validation-icon">
+            {passwordValid() ? '✓' : '✗'}
+          </span>
+        {/if}
       </div>
 
       {#if error}
-        <div class="error-message">
+        <div class="error-message" role="alert">
           <span class="error-icon">⚠</span>
           {error}
         </div>
@@ -74,24 +190,42 @@
 
       <div class="remember-forgot">
         <label>
-          <input type="checkbox" /> Recordarme
+          <input 
+            type="checkbox" 
+            bind:checked={rememberMe}
+            disabled={isLoading}
+          /> 
+          Recordarme
         </label>
         <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
       </div>
 
-      <button type="submit" class="btn" disabled={isLoading}>
+      <button 
+        type="submit" 
+        class="btn" 
+        disabled={!formState.canSubmit}
+      >
         {#if isLoading}
           <span class="loading-spinner"></span>
-          Iniciando sesión...
-        {:else}
-          Iniciar Sesión
         {/if}
+        {submitButtonText}
       </button>
     </form>
 
     <div class="register-link">
-      <p>¿No tienes cuenta? <a href="/signup">Regístrate aquí</a></p>
+      <p>¿No tienes cuenta? <a href="/register">Regístrate aquí</a></p>
     </div>
+
+    <!-- Panel de debug (solo en desarrollo) -->
+    {#if import.meta.env.DEV}
+      <details style="margin-top: 20px; color: rgba(255,255,255,0.7); font-size: 12px;">
+        <summary>Debug Info</summary>
+        <pre>{JSON.stringify(formState, null, 2)}</pre>
+        <button type="button" onclick={clearForm} style="margin-top: 10px;">
+          Clear Form
+        </button>
+      </details>
+    {/if}
   </div>
 </div>
 
@@ -149,6 +283,20 @@
     width: 100%;
     height: 55px;
   }
+  .email-icon {
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		color: white;
+		font-size: 18px;
+		cursor: pointer;
+		opacity: 0.7;
+		transition: opacity 0.3s ease;
+		padding: 5px;
+	}
 
   .input-box input {
     width: 100%;
@@ -162,6 +310,45 @@
     outline: none;
     transition: all 0.3s ease;
   }
+  .validation-icon {
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		color: white;
+		font-size: 18px;
+		cursor: pointer;
+		opacity: 0.7;
+		transition: opacity 0.3s ease;
+		padding: 5px;
+	}
+  
+
+  .toggle-password {
+		position: absolute;
+		right: 35px;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		color: white;
+		font-size: 18px;
+		cursor: pointer;
+		opacity: 0.7;
+		transition: opacity 0.3s ease;
+		padding: 5px;
+	}
+
+	.toggle-password:hover:not(:disabled) {
+		opacity: 1;
+	}
+
+	.toggle-password:disabled {
+		cursor: not-allowed;
+		opacity: 0.4;
+	}
 
   .input-box input:focus {
     border-color: rgba(255, 255, 255, 0.5);
@@ -180,7 +367,7 @@
 
   .input-box i {
     position: absolute;
-    right: 20px;
+    right: 35px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 18px;

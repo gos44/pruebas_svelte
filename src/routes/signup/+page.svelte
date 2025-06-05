@@ -1,3 +1,4 @@
+<!-- Register.svelte - Componente de registro corregido -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { register } from '$lib/types/auth';
@@ -12,56 +13,78 @@
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 
-	// Validaciones derivadas - se recalculan automáticamente cuando cambian las dependencias
-	const emailValid = $derived(email.includes('@') && email.includes('.') && email.length > 0);
-	const passwordValid = $derived(password.length >= 8);
-	const passwordsMatch = $derived(password === confirmPassword && confirmPassword.length > 0);
-	const formValid = $derived(emailValid && passwordValid && passwordsMatch);
+	// Validaciones derivadas corregidas - COMO VALORES, NO FUNCIONES
+	const emailValid = $derived(() => {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return email.length > 0 && emailRegex.test(email);
+	});
+	
+	const passwordValid = $derived(() => {
+		return password.length >= 8 &&
+			/[A-Z]/.test(password) &&
+			/[a-z]/.test(password) &&
+			/\d/.test(password);
+	});
+	
+	const passwordsMatch = $derived(() => password === confirmPassword && confirmPassword.length > 0);
+	
+	// CORREGIDO: Usar las funciones derivadas correctamente
+	const formValid = $derived(() => emailValid() && passwordValid() && passwordsMatch());
 
-	// Objeto de estado del formulario - útil para debugging o estado global
-	const formState = $derived({
+	// Estado del formulario
+	const formState = $derived(() => ({
 		email: email.trim(),
 		password,
 		confirmPassword,
-		isValid: formValid,
+		isValid: formValid(),
 		hasErrors: error.length > 0,
+		hasSuccess: success.length > 0,
 		isSubmitting: isLoading
-	});
+	}));
 
 	// Requisitos de contraseña como estado derivado
-	const passwordRequirements = $derived([
+	const passwordRequirements = $derived(() => [
 		{ text: 'Mínimo 8 caracteres', met: password.length >= 8 },
 		{ text: 'Contiene letra mayúscula', met: /[A-Z]/.test(password) },
 		{ text: 'Contiene letra minúscula', met: /[a-z]/.test(password) },
 		{ text: 'Contiene número', met: /\d/.test(password) }
 	]);
 
-	// Efectos secundarios con $effect
+	// Texto del botón dinámico
+	const submitButtonText = $derived(() => 
+		isLoading ? 'Registrando...' :
+		!formValid() ? 'Completa el formulario' :
+		'Crear Cuenta'
+	);
+
+	// Efectos secundarios
 	$effect(() => {
 		// Limpiar mensajes cuando el usuario empiece a escribir
 		if (email || password || confirmPassword) {
-		if (error || success) {
-			error = '';
-			success = '';
-		}
+			if (error || success) {
+				error = '';
+				success = '';
+			}
 		}
 	});
 
-	async function handleRegister() {
+	async function handleRegister(event: Event) {
+		event.preventDefault();
+		
 		// Validaciones previas usando el estado derivado
-		if (!formValid) {
-		if (!emailValid) {
-			error = 'Por favor ingresa un email válido';
-			return;
-		}
-		if (!passwordValid) {
-			error = 'La contraseña debe cumplir todos los requisitos';
-			return;
-		}
-		if (!passwordsMatch) {
-			error = 'Las contraseñas no coinciden';
-			return;
-		}
+		if (!formValid()) {
+			if (!emailValid()) {
+				error = 'Por favor ingresa un email válido';
+				return;
+			}
+			if (!passwordValid()) {
+				error = 'La contraseña debe cumplir todos los requisitos';
+				return;
+			}
+			if (!passwordsMatch()) {
+				error = 'Las contraseñas no coinciden';
+				return;
+			}
 		}
 
 		isLoading = true;
@@ -69,26 +92,27 @@
 		success = '';
 
 		try {
-		const result = await register(formState.email, password);
-		if (result.success) {
-			success = 'Registro exitoso. Redirigiendo al login...';
+			const result = await register(formState().email, password);
 			
-			// Usar $effect.root para manejar el timeout de manera más limpia
-			setTimeout(() => {
-			goto('/login');
-			}, 2000);
-		} else {
-			error = result.message ?? 'Ocurrió un error desconocido.';
-		}
+			if (result.success) {
+				success = result.message || 'Registro exitoso. Redirigiendo al login...';
+				
+				// Redirigir después de 2 segundos
+				setTimeout(() => {
+					goto('/login');
+				}, 2000);
+			} else {
+				error = result.message || 'Ocurrió un error desconocido.';
+			}
 		} catch (err) {
-		error = 'Error de conexión. Intenta de nuevo.';
-		console.error('Register error:', err);
+			error = 'Error de conexión. Intenta de nuevo.';
+			console.error('Register error:', err);
 		} finally {
-		isLoading = false;
+			isLoading = false;
 		}
 	}
 
-	// Funciones de utilidad que pueden usar el estado reactivo
+	// Funciones auxiliares
 	const togglePasswordVisibility = () => {
 		showPassword = !showPassword;
 	};
@@ -105,145 +129,147 @@
 		success = '';
 	};
 
-	// Derivado para el texto del botón basado en el estado
-	const submitButtonText = $derived(
-	isLoading ? 'Registrando...' :
-	!formValid ? 'Completa el formulario' :
-	'Crear Cuenta'
-	);
-
 	// Log del estado para debugging (solo en desarrollo)
 	$effect(() => {
 		if (import.meta.env.DEV) {
-		console.log('Form State:', formState);
+			console.log('Register Form State:', formState());
 		}
 	});
-	</script>
+</script>
 
-	<div class="register-container">
+<div class="register-container">
 	<div class="wrapper">
 		<h1>Crear Cuenta</h1>
 		
 		<form onsubmit={handleRegister}>
-		<div class="input-box">
-			<input 
-			type="email" 
-			bind:value={email} 
-			placeholder="Correo electrónico" 
-			required 
-			disabled={isLoading}
-			class:valid={emailValid}
-			class:invalid={!emailValid && email.length > 0}
-			/>
-			<i class="email-icon">✉</i>
-			{#if email.length > 0}
-			<span class="validation-icon">
-				{emailValid ? '✓' : '✗'}
-			</span>
-			{/if}
-		</div>
-		
-		<div class="input-box">
-			<input 
-			type={showPassword ? 'text' : 'password'}
-			bind:value={password} 
-			placeholder="Contraseña" 
-			required 
-			disabled={isLoading}
-			class:valid={passwordValid}
-			class:invalid={!passwordValid && password.length > 0}
-			/>
-			<button 
-			type="button" 
-			class="toggle-password"
-			onclick={togglePasswordVisibility}
-			disabled={isLoading}
-			>
-			{showPassword ? '🙈' : '👁'}
-			</button>
+			<div class="input-box">
+				<input 
+					type="email" 
+					bind:value={email} 
+					placeholder="Correo electrónico" 
+					required 
+					disabled={isLoading}
+					class:valid={emailValid()}
+					class:invalid={!emailValid() && email.length > 0}
+					autocomplete="email"
+				/>
+				<i class="email-icon">✉</i>
+				{#if email.length > 0}
+					<span class="validation-icon">
+						{emailValid() ? '✓' : '✗'}
+					</span>
+				{/if}
+			</div>
+			
+			<div class="input-box">
+				<input 
+					type={showPassword ? 'text' : 'password'}
+					bind:value={password} 
+					placeholder="Contraseña" 
+					required 
+					disabled={isLoading}
+					class:valid={passwordValid()}
+					class:invalid={!passwordValid() && password.length > 0}
+					autocomplete="new-password"
+				/>
+				<button 
+					type="button" 
+					class="toggle-password"
+					onclick={togglePasswordVisibility}
+					disabled={isLoading}
+					aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+				>
+					{showPassword ? '✗' : '👁'}
+				</button>
+				{#if password.length > 0}
+					<span class="validation-icon">
+						{passwordValid() ? '✓' : '✗'}
+					</span>
+				{/if}
+			</div>
+
+			<!-- Requisitos de contraseña usando estado derivado -->
 			{#if password.length > 0}
-			<span class="validation-icon">
-				{passwordValid ? '✓' : '✗'}
-			</span>
-			{/if}
-		</div>
-
-		<!-- Requisitos de contraseña usando estado derivado -->
-		{#if password.length > 0}
-			<div class="password-requirements">
-			{#each passwordRequirements as requirement}
-				<div class="requirement" class:met={requirement.met}>
-				{requirement.met ? '✓' : '•'} {requirement.text}
+				<div class="password-requirements">
+					{#each passwordRequirements() as requirement}
+						<div class="requirement" class:met={requirement.met}>
+							{requirement.met ? '✓' : '•'} {requirement.text}
+						</div>
+					{/each}
 				</div>
-			{/each}
+			{/if}
+			
+			<div class="input-box">
+				<input 
+					type={showConfirmPassword ? 'text' : 'password'}
+					bind:value={confirmPassword} 
+					placeholder="Confirmar contraseña" 
+					required 
+					disabled={isLoading}
+					class:valid={passwordsMatch()}
+					class:invalid={!passwordsMatch() && confirmPassword.length > 0}
+					autocomplete="new-password"
+				/>
+				<button 
+					type="button" 
+					class="toggle-password"
+					onclick={toggleConfirmPasswordVisibility}
+					disabled={isLoading}
+					aria-label={showConfirmPassword ? 'Ocultar confirmación' : 'Mostrar confirmación'}
+				>
+					{showConfirmPassword ? '✗' : '👁'}
+				</button>
+				{#if confirmPassword.length > 0}
+					<span class="validation-icon">
+						{passwordsMatch() ? '✓' : '✗'}
+					</span>
+				{/if}
 			</div>
-		{/if}
-		
-		<div class="input-box">
-			<input 
-			type={showConfirmPassword ? 'text' : 'password'}
-			bind:value={confirmPassword} 
-			placeholder="Confirmar contraseña" 
-			required 
-			disabled={isLoading}
-			class:valid={passwordsMatch}
-			class:invalid={!passwordsMatch && confirmPassword.length > 0}
-			/>
-			<button 
-			type="button" 
-			class="toggle-password"
-			onclick={toggleConfirmPasswordVisibility}
-			disabled={isLoading}
+
+			{#if error}
+				<div class="error-message" role="alert">
+					<span class="error-icon">⚠</span>
+					{error}
+				</div>
+			{/if}
+
+			{#if success}
+				<div class="success-message" role="status">
+					<span class="success-icon">✓</span>
+					{success}
+				</div>
+			{/if}
+
+			<button
+				type="submit"
+				class="btn"
+				disabled={isLoading || !formValid()}
 			>
-			{showConfirmPassword ? '🙈' : '👁'}
+				{#if isLoading}
+					<span class="loading-spinner"></span>
+				{/if}
+				{submitButtonText()}
 			</button>
-			{#if confirmPassword.length > 0}
-			<span class="validation-icon">
-				{passwordsMatch ? '✓' : '✗'}
-			</span>
-			{/if}
-		</div>
-
-		{#if error}
-			<div class="error-message">
-			<span class="error-icon">⚠</span>
-			{error}
-			</div>
-		{/if}
-
-		{#if success}
-			<div class="success-message">
-			<span class="success-icon">✓</span>
-			{success}
-			</div>
-		{/if}
-
-		<button
-			type="submit"
-			class="btn"
-			disabled={isLoading || !formValid}
-		>
-		{#if isLoading}
-			<span class="loading-spinner"></span>
-			{/if}
-			{submitButtonText}
-		</button>
 		</form>
 
 		<div class="login-link">
-		<p>¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a></p>
+			<p>¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a></p>
 		</div>
 
 		<!-- Debug info (solo en desarrollo) -->
 		{#if import.meta.env.DEV}
-		<details style="margin-top: 20px; color: rgba(255,255,255,0.7); font-size: 12px;">
-			<summary>Debug Info</summary>
-			<pre>{JSON.stringify(formState, null, 2)}</pre>
-		</details>
+			<details style="margin-top: 20px; color: rgba(255,255,255,0.7); font-size: 12px;">
+				<summary>Debug Info</summary>
+				<pre>{JSON.stringify(formState(), null, 2)}</pre>
+				<button type="button" onclick={clearForm} style="margin-top: 10px;">
+					Clear Form
+				</button>
+			</details>
 		{/if}
 	</div>
 </div>
-	<style>
+
+<style>
 	.register-container {
 		font-family: "Montserrat", sans-serif;
 		display: flex;
@@ -313,14 +339,17 @@
 		box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 	}
 
+	/* Estados de validación mejorados */
 	.input-box input.valid {
 		border-color: rgba(76, 175, 80, 0.8);
 		background: rgba(76, 175, 80, 0.1);
+		box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
 	}
 
 	.input-box input.invalid {
 		border-color: rgba(244, 67, 54, 0.8);
 		background: rgba(244, 67, 54, 0.1);
+		box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
 	}
 
 	.input-box input:disabled {
@@ -335,7 +364,7 @@
 
 	.input-box .email-icon {
 		position: absolute;
-		right: 35px;
+		right: 30px;
 		top: 50%;
 		transform: translateY(-50%);
 		font-size: 18px;
@@ -368,38 +397,46 @@
 
 	.validation-icon {
 		position: absolute;
-		right: 20px;
+		right: 60px;
 		top: 50%;
 		transform: translateY(-50%);
 		font-size: 16px;
 		font-weight: bold;
+		z-index: 1;
 	}
 
-	.input-box input.valid + * + .validation-icon {
+	/* Íconos de validación con colores específicos */
+	.input-box input.valid ~ .validation-icon {
 		color: #4caf50;
 	}
 
-	.input-box input.invalid + * + .validation-icon {
+	.input-box input.invalid ~ .validation-icon {
 		color: #f44336;
 	}
 
 	.password-requirements {
 		margin: -10px 0 15px 0;
 		font-size: 12px;
+		padding: 10px;
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
 	.requirement {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 1px 0;
+		padding: 2px 0;
 		opacity: 0.7;
 		transition: all 0.3s ease;
+		color: rgba(255, 255, 255, 0.8);
 	}
 
 	.requirement.met {
 		opacity: 1;
 		color: #4caf50;
+		font-weight: 500;
 	}
 
 	.error-message {
@@ -510,26 +547,30 @@
 	/* Responsive design */
 	@media (max-width: 480px) {
 		.wrapper {
-		padding: 30px 25px;
-		margin: 10px;
-		max-width: 100%;
+			padding: 30px 25px;
+			margin: 10px;
+			max-width: 100%;
 		}
 		
 		.wrapper h1 {
-		font-size: 28px;
+			font-size: 28px;
 		}
 		
 		.input-box {
-		height: 50px;
+			height: 50px;
 		}
 
 		.input-box input {
-		padding: 0 70px 0 15px;
-		font-size: 14px;
+			padding: 0 70px 0 15px;
+			font-size: 14px;
 		}
 
 		.input-box input::placeholder {
-		font-size: 13px;
+			font-size: 13px;
+		}
+
+		.validation-icon {
+			right: 50px;
 		}
 	}
-	</style>
+</style>
