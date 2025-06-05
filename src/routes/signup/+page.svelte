@@ -13,7 +13,7 @@
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 
-	// Validaciones derivadas corregidas - COMO VALORES, NO FUNCIONES
+	// Validaciones derivadas 
 	const emailValid = $derived(() => {
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		return email.length > 0 && emailRegex.test(email);
@@ -28,7 +28,7 @@
 	
 	const passwordsMatch = $derived(() => password === confirmPassword && confirmPassword.length > 0);
 	
-	// CORREGIDO: Usar las funciones derivadas correctamente
+	// Usar las funciones derivadas
 	const formValid = $derived(() => emailValid() && passwordValid() && passwordsMatch());
 
 	// Estado del formulario

@@ -1,5 +1,5 @@
 <script>
-    import BarChart from "$lib/components/BarChart.svelte";
+    import BarChart from "$lib/components/ui/BarChart.svelte";
     
     // Datos más completos y realistas
     let meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'];

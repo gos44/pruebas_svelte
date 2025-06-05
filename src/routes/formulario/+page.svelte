@@ -1,5 +1,5 @@
 <script>
-  import Crud from "$lib/components/Crud.svelte";
+  import Crud from "$lib/components/ui/Crud.svelte";
 </script>
 
 <div>

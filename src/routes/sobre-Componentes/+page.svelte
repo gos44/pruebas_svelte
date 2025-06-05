@@ -1,15 +1,15 @@
 <script>
-import BarChart from "$lib/components/BarChart.svelte";
+import BarChart from "$lib/components/ui/BarChart.svelte";
 import Button from "$lib/components/componentesGenericos/Button.svelte";
 import Card from "$lib/components/componentesGenericos/Card.svelte";
 import Input from "$lib/components/componentesGenericos/Input.svelte";
 import List from "$lib/components/componentesGenericos/List.svelte";
 import Modal from "$lib/components/componentesGenericos/Modal.svelte";
 import Tabs from "$lib/components/componentesGenericos/Tabs.svelte";
-import Crud from "$lib/components/Crud.svelte";
-import Footer from "$lib/components/Footer.svelte";
-import NavBar from "$lib/components/NavBar.svelte";
-import TodoList from "$lib/components/TodoList.svelte";
+import Crud from "$lib/components/ui/Crud.svelte";
+import Footer from "$lib/components/ui/Footer.svelte";
+import NavBar from "$lib/components/ui/NavBar.svelte";
+import TodoList from "$lib/components/ui/TodoList.svelte";
 
     let showModal = false;
     const fruits = ['Manzana', 'Plátano', 'Naranja'];
