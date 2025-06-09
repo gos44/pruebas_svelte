@@ -3,6 +3,7 @@
   import Counter from '$lib/components/ui/Contador.svelte';
   import TextInput from '$lib/components/ui/ContenedorTexto.svelte';
   import ToggleVisibility from '$lib/components/ui/ContenedorVisible.svelte';
+  import Card from '$lib/components/compGenericos/Card.svelte';
 </script>
 
 
@@ -13,7 +14,10 @@
     <Counter />
     <TextInput />
     <ToggleVisibility />
+    
   </div>
+
+  
 </main>
 
 <style>
