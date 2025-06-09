@@ -144,23 +144,7 @@ const mainLinks: Link[] = [
     }
     
     .nav-links a.active,
-    .nav-links a[class~="active"] {
-        color: #2563eb;
-        font-weight: 600;
-    }
-    
-    .nav-links a.active::after,
-    .nav-links a[class~="active"]::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background-color: #2563eb;
-        border-radius: 2px;
-    }
-    
+        
     .auth-buttons {
         display: flex;
         gap: 1rem;

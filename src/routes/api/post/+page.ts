@@ -6,7 +6,7 @@ export type Post = {
 };
 
 export async function load({ fetch }) {
-  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const res = await fetch(import.meta.env.VITE_LETRAS_URL_POST);
   if (!res.ok) throw new Error('Error cargando posts');
   const posts: Post[] = await res.json();
   return { posts };

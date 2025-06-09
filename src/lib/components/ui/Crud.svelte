@@ -1,11 +1,7 @@
 <script lang="ts">
 
-type Persona = {
-    id: string;
-    nombre: string;
-    edad: number;
-    fechaCreacion: Date;
-};
+import type {Persona} from '$lib/stores/crud'
+
 
 let nombre = $state('');
 let edad = $state<number | string>('');

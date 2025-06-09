@@ -10,6 +10,7 @@ import Crud from "$lib/components/ui/Crud.svelte";
 import Footer from "$lib/components/ui/Footer.svelte";
 import NavBar from "$lib/components/ui/NavBar.svelte";
 import TodoList from "$lib/components/ui/TodoList.svelte";
+import FancyInput from "$lib/components/ui/FancyInput.svelte";
 
     let showModal = false;
     const fruits = ['Manzana', 'Plátano', 'Naranja'];
@@ -75,6 +76,7 @@ import TodoList from "$lib/components/ui/TodoList.svelte";
 <p>Nombre: Juan Pérez</p>
 </Card>
 </div>
+<br>
 
 <div class="input">
 <Input type="email" placeholder="Correo electrónico" />
@@ -82,6 +84,7 @@ import TodoList from "$lib/components/ui/TodoList.svelte";
 <List items={fruits} let:item>
 🍎 {item}
 </List>
+<br>
 
 <div class="tabs">
 <Tabs tabs={['Perfil', 'Configuración']} let:activeTab>
@@ -92,7 +95,10 @@ import TodoList from "$lib/components/ui/TodoList.svelte";
 {/if}
 </Tabs>
 </div>
-
+<br>
+<div class="FancyInput" >
+<FancyInput/>
+</div>
 
 <style>
     .dashboard {
@@ -141,6 +147,12 @@ import TodoList from "$lib/components/ui/TodoList.svelte";
         margin: 1rem;
     }
     .tabs {
+        margin: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    .FancyInput {
         margin: 1rem;
         background-color: #f8f9fa;
         border-radius: 8px;
